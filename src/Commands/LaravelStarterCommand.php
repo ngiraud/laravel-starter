@@ -70,7 +70,7 @@ final class LaravelStarterCommand extends Command
         $this->composerPackages = PackagesCollection::from(config('starter.packages', []))
             ->when(
                 in_array('minio', $this->dockerServices),
-                fn (PackagesCollection $collection): \BerryValley\LaravelStarter\Support\PackagesCollection => $collection->addPackages(FlysystemAwsS3::class)
+                fn (PackagesCollection $collection): PackagesCollection => $collection->addPackages(FlysystemAwsS3::class)
             );
 
         $this->editEnvironmentFiles();
