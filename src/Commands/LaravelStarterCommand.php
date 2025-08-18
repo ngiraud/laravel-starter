@@ -87,12 +87,6 @@ final class LaravelStarterCommand extends Command
             return self::FAILURE;
         }
 
-        // @todo: laravel/nightwatch ?
-        // @todo: filament v4 ?
-        // @todo: Laravel Boost ?
-        // @todo: update AppServiceProvider
-        // @todo: Make action command
-
         $this->installComposerPackages();
 
         $this->newLine(2);
@@ -240,13 +234,28 @@ final class LaravelStarterCommand extends Command
 
         $this->composerPackages
             ->shouldInstall($selected)
-            ->each(fn (ComposerPackage $package) => $package->run());
+            ->each(function (ComposerPackage $package): void {
+                if ($this->composer->hasPackage($package->require)) {
+                    $this->components->warn("{$package->name} is already installed. Moving to the next package.");
+
+                    return;
+                }
+
+                $this->newLine(2);
+
+                $this->components->info(sprintf('Installing %s', $package->name));
+
+                $package->run();
+            });
     }
 
     private function copyFiles(): void
     {
         $this->components->info('Publishing pint.json config file');
         $this->files->copy(__DIR__.'/../../stubs/pint/pint.json.stub', base_path('pint.json'));
+
+        $this->components->info('Publishing AppServiceProvider class');
+        $this->files->copy(__DIR__.'/../../stubs/providers/AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
 
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");

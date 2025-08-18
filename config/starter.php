@@ -17,6 +17,7 @@ return [
         Packages\Rector::class,
         Packages\LaravelBackup::class,
         Packages\Filament::class,
+        Packages\LaravelNightwatch::class,
     ],
 
 ];

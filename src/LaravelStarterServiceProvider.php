@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter;
 
 use BerryValley\LaravelStarter\Commands\LaravelStarterCommand;
+use BerryValley\LaravelStarter\Commands\MakeActionCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -15,6 +16,7 @@ final class LaravelStarterServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-starter')
             ->hasConfigFile()
-            ->hasCommand(LaravelStarterCommand::class);
+            ->hasCommand(LaravelStarterCommand::class)
+            ->hasCommand(MakeActionCommand::class);
     }
 }

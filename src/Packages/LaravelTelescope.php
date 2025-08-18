@@ -21,7 +21,6 @@ final class LaravelTelescope extends ComposerPackage
     {
         foreach ($this->files->allFiles(database_path('migrations')) as $file) {
             if (Str::contains($file->getFilename(), 'telescope')) {
-                // @todo does this works?
                 $this->files->delete($file->getPathname());
             }
         }

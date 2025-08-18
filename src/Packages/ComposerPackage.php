@@ -44,12 +44,8 @@ abstract class ComposerPackage
     final public function run(): void
     {
         if ($this->composer->hasPackage($this->require)) {
-            $this->components->warn("{$this->name} is already installed. Moving to the next package.");
-
             return;
         }
-
-        $this->output->newLine(2);
 
         $this->requirePackage();
 
@@ -68,8 +64,6 @@ abstract class ComposerPackage
                 fn (Collection $arguments) => $arguments->push('--dev'),
             )
             ->merge($this->extraArguments);
-
-        $this->components->info(sprintf('Installing %s', $this->name));
 
         TerminalCommand::sail()->run("composer require {$this->require} {$arguments->implode(' ')}");
     }

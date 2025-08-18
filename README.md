@@ -7,7 +7,8 @@
 
 This package automates the setup of a fresh Laravel application by installing and configuring the packages and tools you commonly use in your projects.
 
-It configures Docker Compose with Laravel Sail, installs your preferred packages (Telescope, Horizon, Filament, etc.), sets up Composer scripts for development, and configures your environment according to your preferences (locale, database, services).
+It configures Docker Compose with Laravel Sail, installs your preferred packages (Telescope, Horizon, Filament, etc.), sets up Composer scripts for development, and configures your
+environment according to your preferences (locale, database, services).
 
 ## Installation
 
@@ -32,6 +33,8 @@ The command will guide you interactively to:
 - **Install Composer packages**: Laravel Telescope, Horizon, Filament, Larastan, Rector, etc.
 - **Setup development scripts**: `composer dev`, `composer test`, `composer lint`
 - **Publish configuration files**: pint.json, translation files
+- **Publish custom AppServiceProvider**
+- **Add a command to create an Action class**
 
 ### Available packages
 
@@ -42,6 +45,7 @@ The command will guide you interactively to:
 - **Rector** - Automated refactoring
 - **Laravel Backup** - Automated backups
 - **Paratest** - Parallel testing
+- **Laravel Nightwatch** - Monitoring application
 
 ### Added Composer scripts
 
