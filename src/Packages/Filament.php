@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace BerryValley\LaravelStarter\Packages;
+
+use BerryValley\LaravelStarter\Facades\TerminalCommand;
+
+final class Filament extends ComposerPackage
+{
+    public string $name = 'Filament';
+
+    public string $require = 'filament/filament';
+
+    public string $version = '^4.0';
+
+    public bool $isDevRequirement = false;
+
+    public bool $installByDefault = false;
+
+    public function install(): void
+    {
+        TerminalCommand::sail()->run('php artisan filament:install --panels --force --no-interaction');
+    }
+}

@@ -15,9 +15,7 @@ use Illuminate\Support\Composer;
 use Illuminate\Support\Str;
 use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Throwable;
 
-use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
 use function Laravel\Prompts\pause;
 use function Laravel\Prompts\select;
@@ -49,9 +47,6 @@ final class LaravelStarterCommand extends Command
         $this->files = $files;
         $this->composer = app('composer');
 
-        // Temporary copy the docker compose file so we do not have to do this every time
-        $this->files->copy(__DIR__.'/../../docker-compose-cookthis.yml', base_path('docker-compose.yml'));
-
         if (! $this->composer->hasPackage('laravel/sail')) {
             $this->components->error('Please install Laravel Sail first.');
 
@@ -70,7 +65,7 @@ final class LaravelStarterCommand extends Command
         $this->composerPackages = PackagesCollection::from(config('starter.packages', []))
             ->when(
                 in_array('minio', $this->dockerServices),
-                fn (PackagesCollection $collection): \BerryValley\LaravelStarter\Support\PackagesCollection => $collection->addPackages(FlysystemAwsS3::class)
+                fn (PackagesCollection $collection): PackagesCollection => $collection->addPackages(FlysystemAwsS3::class)
             );
 
         $this->editEnvironmentFiles();
@@ -83,6 +78,7 @@ final class LaravelStarterCommand extends Command
         // @todo: filament v4 ?
         // @todo: Laravel Boost ?
         // @todo: update AppServiceProvider
+        // @todo: Make action command
 
         $this->installComposerPackages();
 
@@ -99,11 +95,8 @@ final class LaravelStarterCommand extends Command
         $this->migrateDatabase();
 
         $this->newLine(2);
-        $this->components->success('Installation completed!');
-
-        if (confirm('Do you want to run the local server?')) {
-            TerminalCommand::sail()->run('composer dev');
-        }
+        $this->components->success('Installation completed! Now start the local server and enjoy!');
+        $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail composer dev</>');
 
         return self::SUCCESS;
     }
@@ -220,14 +213,7 @@ final class LaravelStarterCommand extends Command
                 scroll: 10
             ))
             ->each(function (ComposerPackage $package): void {
-                $this->newLine(2);
-                $this->components->warn(sprintf('Installing %s', $package->name));
-
-                try {
-                    $package->run();
-                } catch (Throwable $exception) {
-                    $this->components->warn($exception->getMessage());
-                }
+                $package->run();
             });
     }
 
@@ -364,6 +350,6 @@ final class LaravelStarterCommand extends Command
     {
         $this->components->info('Migrate database');
 
-        TerminalCommand::sail()->run('php artisan migrate');
+        TerminalCommand::sail()->run('php artisan migrate:fresh');
     }
 }

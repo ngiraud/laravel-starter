@@ -50,10 +50,10 @@
   "scripts": {
     "post-autoload-dump": "@composer run prepare",
     "prepare": "@php vendor/bin/testbench package:discover --ansi",
-    "analyse": "vendor/bin/phpstan analyse",
     "test": "vendor/bin/pest",
-    "test-coverage": "vendor/bin/pest --coverage",
-    "format": "vendor/bin/pint --parallel",
+    "test:coverage": "vendor/bin/pest --coverage",
+    "test:type": "vendor/bin/phpstan analyse",
+    "lint": "vendor/bin/pint --parallel",
     "refactor": "vendor/bin/rector"
   },
   "config": {
@@ -67,10 +67,7 @@
     "laravel": {
       "providers": [
         "BerryValley\\LaravelStarter\\LaravelStarterServiceProvider"
-      ],
-      "aliases": {
-        "LaravelStarter": "BerryValley\\LaravelStarter\\Facades\\LaravelStarter"
-      }
+      ]
     }
   },
   "minimum-stability": "dev",

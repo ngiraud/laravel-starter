@@ -6,6 +6,9 @@ use BerryValley\LaravelStarter\Packages;
 
 return [
 
+    /**
+     * The packages proposed to installation
+     */
     'packages' => [
         Packages\LaravelTelescope::class,
         Packages\LaravelHorizon::class,
@@ -13,6 +16,7 @@ return [
         Packages\Larastan::class,
         Packages\Rector::class,
         Packages\LaravelBackup::class,
+        Packages\Filament::class,
     ],
 
 ];
