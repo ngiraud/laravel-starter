@@ -156,8 +156,6 @@ final class LaravelStarterCommand extends Command
         $environment = str_replace('APP_FAKER_LOCALE=en_US', "APP_FAKER_LOCALE={$fakerLocale}", $environment);
         $environmentExample = str_replace('APP_FAKER_LOCALE=en_US', "APP_FAKER_LOCALE={$fakerLocale}", $environmentExample);
 
-        $environment = str_replace('DB_DATABASE=laravel', "DB_DATABASE={$database}", $environment);
-
         $environment = str_replace('SESSION_DRIVER=database', 'SESSION_DRIVER=cookie', $environment);
         $environmentExample = str_replace('SESSION_DRIVER=database', 'SESSION_DRIVER=cookie', $environmentExample);
 
