@@ -24,6 +24,9 @@ abstract class ComposerPackage
 
     public string $version = 'default';
 
+    /**
+     * @var array<int, string>
+     */
     public array $extraArguments = [];
 
     protected Filesystem $files;

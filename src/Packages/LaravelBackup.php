@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Packages;
 
 use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use Exception;
 
 final class LaravelBackup extends ComposerPackage
 {
@@ -29,7 +30,9 @@ final class LaravelBackup extends ComposerPackage
     {
         $path = base_path('config/backup.php');
 
-        $config = file_get_contents($path);
+        if ((($config = file_get_contents($path))) === false) {
+            throw new Exception("Unable to read {$path} file");
+        }
 
         $config = str_replace(
             "'name' => env('APP_NAME', 'laravel-backup')",

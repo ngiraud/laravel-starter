@@ -5,31 +5,27 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Support;
 
 use BerryValley\LaravelStarter\Packages\ComposerPackage;
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 
+/** @extends Collection<array-key, ComposerPackage> */
 final class PackagesCollection extends Collection
 {
     /**
-     * Create a new packages collection instance from the given items
-     *
-     * @template TMakeKey of array-key
-     * @template TMakeValue
-     *
-     * @param  Arrayable<TMakeKey, TMakeValue>|iterable<TMakeKey, TMakeValue>  $items
-     * @return static<TMakeKey, TMakeValue>
+     * @param  array<int, string>  $items
      */
-    public static function from(array|Arrayable $items = []): self
+    public static function from(array $items): self
     {
         return (new self)->addPackages($items);
     }
 
+    /**
+     * @param  array<int, string>|string  $classes
+     */
     public function addPackages(array|string $classes): self
     {
-        $files = collect($classes)
-            ->filter(fn (string $class): bool => class_exists($class))
-            ->map(fn (string $class): object => new $class)
-            ->filter(fn ($a): bool => is_a($a, ComposerPackage::class))
+        $files = Collection::wrap($classes)
+            ->filter(fn (string $class): bool => class_exists($class) && is_a($class, ComposerPackage::class, true))
+            ->map(fn (string $class): ComposerPackage => new $class)
             ->values();
 
         return $this->merge($files);
@@ -40,6 +36,9 @@ final class PackagesCollection extends Collection
         return $this->where('installByDefault', true)->values();
     }
 
+    /**
+     * @param  array<int, string>  $composerRequires
+     */
     public function shouldInstall(array $composerRequires): self
     {
         $this->items = $this

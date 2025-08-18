@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Support;
 
-use Illuminate\Container\Attributes\Singleton;
-use Illuminate\Process\ProcessResult;
+use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
 
-#[Singleton]
-final class CommandExecutor
+final class TerminalCommand
 {
     private string $context = 'local';
 

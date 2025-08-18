@@ -8,6 +8,7 @@ use BerryValley\LaravelStarter\Facades\TerminalCommand;
 use BerryValley\LaravelStarter\Packages\ComposerPackage;
 use BerryValley\LaravelStarter\Packages\FlysystemAwsS3;
 use BerryValley\LaravelStarter\Support\PackagesCollection;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
@@ -30,8 +31,14 @@ final class LaravelStarterCommand extends Command
 
     public $description = 'Prepare everything after a fresh Laravel installation';
 
+    /**
+     * @var array<int|string>
+     */
     private array $dockerServices;
 
+    /**
+     * @var array<int, string>
+     */
     private array $defaultDockerServices = ['mysql', 'redis', 'minio'];
 
     private Composer $composer;
@@ -53,20 +60,26 @@ final class LaravelStarterCommand extends Command
             return self::FAILURE;
         }
 
+        /** @var array<int, string> $options */
+        $options = [
+            ...$this->defaultDockerServices,
+            ...Arr::reject($this->services, fn ($service): bool => in_array($service, $this->defaultDockerServices)),
+        ];
+
         $this->dockerServices = multiselect(
             label: 'Which services would you like to install?',
-            options: [
-                ...$this->defaultDockerServices,
-                ...Arr::reject($this->services, fn ($service): bool => in_array($service, $this->defaultDockerServices)),
-            ],
+            options: $options,
             default: $this->defaultDockerServices,
         );
 
-        $this->composerPackages = PackagesCollection::from(config('starter.packages', []))
-            ->when(
-                in_array('minio', $this->dockerServices),
-                fn (PackagesCollection $collection): PackagesCollection => $collection->addPackages(FlysystemAwsS3::class)
-            );
+        /** @var array<int, string> $packages */
+        $packages = config()->array('starter.packages', []);
+
+        $this->composerPackages = PackagesCollection::from($packages);
+
+        if (in_array('minio', $this->dockerServices)) {
+            $this->composerPackages->addPackages(FlysystemAwsS3::class);
+        }
 
         $this->editEnvironmentFiles();
 
@@ -121,7 +134,7 @@ final class LaravelStarterCommand extends Command
             ->wrap('"')
             ->value();
 
-        $this->selectedLocale = select(
+        $this->selectedLocale = (string) select(
             label: 'Which locale do you want to use?',
             options: ['fr', 'en'],
             default: 'fr',
@@ -132,8 +145,13 @@ final class LaravelStarterCommand extends Command
         $envPath = base_path('.env');
         $envExamplePath = base_path('.env.example');
 
-        $environment = file_get_contents($envPath);
-        $environmentExample = file_get_contents($envExamplePath);
+        if ((($environment = file_get_contents($envPath))) === false) {
+            throw new Exception('Unable to read .env file');
+        }
+
+        if ((($environmentExample = file_get_contents($envExamplePath))) === false) {
+            throw new Exception('Unable to read .env.example file');
+        }
 
         $environment = str_replace('APP_NAME=Laravel', "APP_NAME={$appName}", $environment);
         $environmentExample = str_replace('APP_NAME=Laravel', "APP_NAME={$appName}", $environmentExample);
@@ -169,14 +187,15 @@ final class LaravelStarterCommand extends Command
             $environment = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $environment);
             $environmentExample = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $environmentExample);
 
-            $environment = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', $environment);
-            $environment = preg_replace('/AWS_SECRET_ACCESS_KEY=.*/', 'AWS_SECRET_ACCESS_KEY=password', (string) $environment);
-            $environment = preg_replace('/AWS_BUCKET=.*/', 'AWS_BUCKET=local', (string) $environment);
             $environment = str_replace('AWS_USE_PATH_STYLE_ENDPOINT=false', implode("\n", [
                 'AWS_USE_PATH_STYLE_ENDPOINT=true',
                 'AWS_ENDPOINT=http://localhost:9000',
                 "AWS_URL=http://minio.{$projectName}.orb.local:9000/public",
             ]), $environment);
+
+            $environment = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', (string) $environment);
+            $environment = preg_replace('/AWS_SECRET_ACCESS_KEY=.*/', 'AWS_SECRET_ACCESS_KEY=password', (string) $environment);
+            $environment = preg_replace('/AWS_BUCKET=.*/', 'AWS_BUCKET=local', (string) $environment);
         }
 
         file_put_contents($envPath, $environment);
@@ -205,16 +224,23 @@ final class LaravelStarterCommand extends Command
     {
         $this->newLine();
 
+        /** @var array<string, string> $options */
+        $options = $this->composerPackages->pluck('name', 'require');
+
+        /** @var array<int, string> $default */
+        $default = $this->composerPackages->installedByDefault()->pluck('require');
+
+        /** @var array<int, string> $selected */
+        $selected = multiselect(
+            label: 'Which composer dependencies would you like to install?',
+            options: $options,
+            default: $default,
+            scroll: 10
+        );
+
         $this->composerPackages
-            ->shouldInstall(multiselect(
-                label: 'Which composer dependencies would you like to install?',
-                options: $this->composerPackages->pluck('name', 'require'),
-                default: $this->composerPackages->installedByDefault()->pluck('require'),
-                scroll: 10
-            ))
-            ->each(function (ComposerPackage $package): void {
-                $package->run();
-            });
+            ->shouldInstall($selected)
+            ->each(fn (ComposerPackage $package) => $package->run());
     }
 
     private function copyFiles(): void
@@ -238,7 +264,10 @@ final class LaravelStarterCommand extends Command
     private function modifyConsoleFile(): void
     {
         $path = base_path('routes/console.php');
-        $console = file_get_contents($path);
+
+        if ((($console = file_get_contents($path))) === false) {
+            throw new Exception("Unable to read {$path} file");
+        }
 
         if (! str_contains($console, 'Schedule::')) {
             return;
@@ -277,59 +306,64 @@ final class LaravelStarterCommand extends Command
             $devCommands = $commands->where('name', '!=', 'ssr');
             $ssrCommands = $commands->where('name', '!=', 'vite');
 
-            $composer['scripts']['dev'] = [
+            /** @var array<string,string|array<int,string>> $scripts */
+            $scripts = $composer['scripts'] ?? [];
+
+            $scripts['dev'] = [
                 'Composer\\Config::disableProcessTimeout',
                 sprintf(
                     'npx concurrently -c \"%s\" %s --names=%s --kill-others',
                     $devCommands->pluck('color')->implode(','),
-                    $devCommands->pluck('command')->map(fn (string $command): string => "\"{$command}\"")->implode(' '),
+                    $devCommands->map(fn (array $command): string => "\"{$command['command']}\"")->implode(' '),
                     $devCommands->pluck('name')->implode(',')
                 ),
             ];
 
-            $composer['scripts']['dev:ssr'] = [
+            $scripts['dev:ssr'] = [
                 'npm run build:ssr',
                 'Composer\\Config::disableProcessTimeout',
                 sprintf(
                     'npx concurrently -c \"%s\" %s --names=%s --kill-others',
                     $ssrCommands->pluck('color')->implode(','),
-                    $ssrCommands->pluck('command')->map(fn (string $command): string => "\"{$command}\"")->implode(' '),
+                    $ssrCommands->map(fn (array $command): string => "\"{$command['command']}\"")->implode(' '),
                     $ssrCommands->pluck('name')->implode(',')
                 ),
             ];
 
-            $composer['scripts']['lint'] = [
+            $scripts['lint'] = [
                 'pint --parallel',
             ];
 
             if ($hasRectorDependency = $this->composer->hasPackage('rector/rector')) {
-                $composer['scripts']['refactor'] = [
+                $scripts['refactor'] = [
                     'rector',
                 ];
             }
 
-            $composer['scripts']['test'] = [
+            $scripts['test'] = [
                 '@php artisan config:clear --ansi',
                 sprintf('@php artisan test %s--compact --coverage --min=90', $this->composer->hasPackage('brianium/paratest') ? '--parallel' : ''),
             ];
 
-            $composer['scripts']['test:lint'] = [
+            $scripts['test:lint'] = [
                 'pint --parallel --test',
                 'npm run lint',
                 'npm run format:check',
             ];
 
             if ($this->composer->hasPackage('larastan/larastan')) {
-                $composer['scripts']['test:type'] = [
+                $scripts['test:type'] = [
                     'phpstan',
                 ];
             }
 
             if ($hasRectorDependency) {
-                $composer['scripts']['test:refactor'] = [
+                $scripts['test:refactor'] = [
                     'rector --dry-run',
                 ];
             }
+
+            $composer['scripts'] = $scripts;
 
             return $composer;
         });
