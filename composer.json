@@ -1,9 +1,11 @@
 {
   "name": "ngiraud/laravel-starter",
-  "description": "An opinionated starter after creating a fresh Laravel application",
+  "description": "An opinionated starter to launch after creating a fresh Laravel application",
   "keywords": [
-    "Nicolas Giraud",
+    "php",
     "laravel",
+    "package",
+    "starter",
     "laravel-starter"
   ],
   "homepage": "https://github.com/ngiraud/laravel-starter",
@@ -37,14 +39,12 @@
   },
   "autoload": {
     "psr-4": {
-      "BerryValley\\LaravelStarter\\": "src/",
-      "BerryValley\\LaravelStarter\\Database\\Factories\\": "database/factories/"
+      "BerryValley\\LaravelStarter\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "BerryValley\\LaravelStarter\\Tests\\": "tests/",
-      "Workbench\\App\\": "workbench/app/"
+      "BerryValley\\LaravelStarter\\Tests\\": "tests/"
     }
   },
   "scripts": {
@@ -70,6 +70,6 @@
       ]
     }
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "prefer-stable": true
 }

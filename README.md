@@ -1,4 +1,4 @@
-# An opinionated starter after creating a fresh Laravel application
+# An opinionated starter to launch after creating a fresh Laravel application
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/ngiraud/laravel-starter.svg?style=flat-square)](https://packagist.org/packages/ngiraud/laravel-starter)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ngiraud/laravel-starter/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ngiraud/laravel-starter/actions?query=workflow%3Arun-tests+branch%3Amain)
