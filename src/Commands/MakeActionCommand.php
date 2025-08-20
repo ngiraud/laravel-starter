@@ -6,6 +6,7 @@ namespace BerryValley\LaravelStarter\Commands;
 
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Input\InputOption;
 
 final class MakeActionCommand extends GeneratorCommand
 {
@@ -42,6 +43,7 @@ final class MakeActionCommand extends GeneratorCommand
             ->replaceEnd('.php', '')
             ->replaceEnd('Action', '')
             ->append('Action')
+            ->pascal()
             ->toString();
     }
 
@@ -70,6 +72,18 @@ final class MakeActionCommand extends GeneratorCommand
 
         // Use the app_path helper to get the correct path
         return app_path(str_replace('\\', '/', $name).'.php');
+    }
+
+    /**
+     * Get the console command arguments.
+     *
+     * @return array<int, array<int, int|string>>
+     */
+    protected function getOptions(): array
+    {
+        return [
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the action already exists'],
+        ];
     }
 
     /**

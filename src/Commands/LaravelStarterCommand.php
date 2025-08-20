@@ -359,7 +359,7 @@ final class LaravelStarterCommand extends Command
             ];
 
             if ($this->composer->hasPackage('larastan/larastan')) {
-                $scripts['test:type'] = [
+                $scripts['test:types'] = [
                     'phpstan',
                 ];
             }

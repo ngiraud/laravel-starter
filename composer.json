@@ -52,7 +52,7 @@
     "prepare": "@php vendor/bin/testbench package:discover --ansi",
     "test": "vendor/bin/pest",
     "test:coverage": "vendor/bin/pest --coverage",
-    "test:type": "vendor/bin/phpstan analyse --memory-limit=-1",
+    "test:types": "vendor/bin/phpstan analyse --memory-limit=-1",
     "lint": "vendor/bin/pint --parallel",
     "refactor": "vendor/bin/rector"
   },
