@@ -35,6 +35,12 @@ final class LaravelStarterCommand extends Command
 
     public $description = 'Prepare everything after a fresh Laravel installation';
 
+    protected UpdateEnvironmentAction $updateEnvironmentAction;
+
+    protected PublishFilesAction $publishFilesAction;
+
+    protected UpdateComposerScriptsAction $updateComposerScriptsAction;
+
     /**
      * @var array<int, string>
      */
@@ -51,11 +57,27 @@ final class LaravelStarterCommand extends Command
 
     private string $selectedLocale = 'fr';
 
+    /**
+     * Execute the console command to install Laravel starter kit
+     *
+     * This method orchestrates the complete installation process including:
+     * - Validating prerequisites (Laravel Sail)
+     * - Collecting user preferences
+     * - Initializing Git repository
+     * - Configuring environment files
+     * - Installing Sail and packages
+     * - Publishing configuration files
+     * - Setting up development environment
+     */
     public function handle(Filesystem $files): int
     {
         try {
             $this->files = $files;
             $this->composer = app('composer');
+
+            $this->updateEnvironmentAction = app(UpdateEnvironmentAction::class);
+            $this->publishFilesAction = app(PublishFilesAction::class, ['files' => $this->files]);
+            $this->updateComposerScriptsAction = app(UpdateComposerScriptsAction::class);
 
             if (! $this->composer->hasPackage('laravel/sail')) {
                 throw StarterInstallationException::sailNotInstalled();
@@ -89,6 +111,13 @@ final class LaravelStarterCommand extends Command
     }
 
     /**
+     * Collect user preferences through interactive prompts
+     *
+     * Prompts the user to select:
+     * - Docker services (MySQL, Redis, Minio, etc.)
+     * - Application name and locale
+     * - Composer packages to install
+     *
      * @return array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
      */
     private function collectUserPreferences(): array
@@ -150,6 +179,9 @@ final class LaravelStarterCommand extends Command
         ];
     }
 
+    /**
+     * Initialize Git repository if it doesn't exist and create initial commit
+     */
     private function initializeGit(): void
     {
         if (! $this->files->exists(base_path('.git'))) {
@@ -160,19 +192,29 @@ final class LaravelStarterCommand extends Command
     }
 
     /**
+     * Update .env and .env.example files with user preferences
+     *
+     * Configures application settings, database, Redis, Minio, and other services
+     * based on the selected Docker services and user preferences.
+     *
      * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
      */
     private function updateEnvironmentFiles(array $preferences): void
     {
         $this->components->info('Updating environment files');
 
-        app(UpdateEnvironmentAction::class)->handle(base_path('.env'), $preferences);
-        app(UpdateEnvironmentAction::class)->handle(base_path('.env.example'), $preferences);
+        $this->updateEnvironmentAction->handle(base_path('.env'), $preferences);
+        $this->updateEnvironmentAction->handle(base_path('.env.example'), $preferences);
 
         $this->commit('Update .env and .env.example files');
     }
 
     /**
+     * Install Laravel Sail with selected Docker services
+     *
+     * Runs the sail:install command with the selected services and prompts
+     * the user to start the containers before continuing.
+     *
      * @param  array<int, string>  $dockerServices
      */
     private function installSail(array $dockerServices): bool
@@ -194,6 +236,12 @@ final class LaravelStarterCommand extends Command
     }
 
     /**
+     * Install selected Composer packages
+     *
+     * Installs the packages selected by the user, including any additional
+     * packages required by the selected Docker services (like AWS S3 for Minio).
+     * Each package installation is committed separately.
+     *
      * @param  array<int, string>  $selectedPackages
      */
     private function installComposerPackages(array $selectedPackages): void
@@ -225,40 +273,50 @@ final class LaravelStarterCommand extends Command
         });
     }
 
+    /**
+     * Publish configuration files and update project structure
+     *
+     * Publishes various stub files including Pint configuration, AppServiceProvider,
+     * User model, TestCase, GitHub Actions workflows, language files, and updates
+     * console.php and composer.json with development scripts.
+     */
     private function publishFiles(): void
     {
-        $publishFilesAction = app(PublishFilesAction::class, ['files' => $this->files]);
-
         $this->newLine();
 
         $this->components->info('Publishing configuration files');
-        $publishFilesAction->publishConfigFiles();
+        $this->publishFilesAction->publishConfigFiles();
 
         $this->components->info('Publishing web-local.php file');
-        $publishFilesAction->publishWebLocalFile();
+        $this->publishFilesAction->publishWebLocalFile();
 
         $this->components->info('Publishing Github Actions');
-        $publishFilesAction->publishGithubActions($this->dockerServices);
+        $this->publishFilesAction->publishGithubActions($this->dockerServices);
 
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");
-            $publishFilesAction->publishLanguageFiles($this->selectedLocale);
+            $this->publishFilesAction->publishLanguageFiles($this->selectedLocale);
         }
 
         $this->commit('Publishing stub files');
 
         $this->components->info('Updating console.php file');
 
-        if ($publishFilesAction->updateConsoleFile()) {
+        if ($this->publishFilesAction->updateConsoleFile()) {
             $this->commit('Modify console.php file');
         }
 
         $this->components->info('Modifying composer.json');
 
-        app(UpdateComposerScriptsAction::class)->handle();
+        $this->updateComposerScriptsAction->handle();
         $this->commit('Modify composer.json file');
     }
 
+    /**
+     * Install frontend dependencies using npm
+     *
+     * Skips installation if node_modules already exists.
+     */
     private function installFrontendDependencies(): void
     {
         if ($this->files->exists(base_path('node_modules'))) {
@@ -271,12 +329,21 @@ final class LaravelStarterCommand extends Command
         $this->commit('Installing frontend dependencies');
     }
 
+    /**
+     * Run database migrations to set up the database schema
+     */
     private function migrateDatabase(): void
     {
         $this->components->info('Migrating database');
         ProcessRunner::sail()->run('php artisan migrate:fresh');
     }
 
+    /**
+     * Apply final code optimizations using Rector and Pint
+     *
+     * Runs Rector for code refactoring and Pint for code formatting
+     * if these packages are installed, then commits the changes.
+     */
     private function applyFinalOptimizations(): void
     {
         $hasRector = $this->composer->hasPackage('rector/rector');
@@ -304,12 +371,24 @@ final class LaravelStarterCommand extends Command
         }
     }
 
+    /**
+     * Create a Git commit with the specified message and semantic prefix
+     *
+     * @param  string  $message  The commit message
+     * @param  string  $semantic  The semantic prefix (feat, fix, chore, etc.)
+     */
     private function commit(string $message, string $semantic = 'feat'): void
     {
         $this->newLine();
         $this->output->note(ProcessRunner::git()->commit($message, $semantic));
     }
 
+    /**
+     * Display completion message with instructions for next steps
+     *
+     * Shows success message and provides commands for starting development
+     * server and setting up Git repository.
+     */
     private function displayCompletionMessage(): void
     {
         $this->newLine(2);

@@ -16,6 +16,9 @@ final readonly class PublishFilesAction
         private Filesystem $files
     ) {}
 
+    /**
+     * Publish configuration files (Pint, AppServiceProvider, User model, TestCase)
+     */
     public function publishConfigFiles(): void
     {
         $this->publishFile('pint.json.stub', base_path('pint.json'));
@@ -24,6 +27,9 @@ final readonly class PublishFilesAction
         $this->publishFile('TestCase.php.stub', base_path('tests/TestCase.php'));
     }
 
+    /**
+     * Publish web-local.php file and update web.php to include it
+     */
     public function publishWebLocalFile(): bool
     {
         $this->publishFile('web-local.php.stub', base_path('routes/web-local.php'));
@@ -31,6 +37,9 @@ final readonly class PublishFilesAction
         return $this->updateWebRoutes();
     }
 
+    /**
+     * Publish language files for the specified locale
+     */
     public function publishLanguageFiles(string $locale): void
     {
         if ($locale === 'en') {
@@ -60,6 +69,9 @@ final readonly class PublishFilesAction
         $this->configureGithubWorkflows($dockerServices);
     }
 
+    /**
+     * Update console.php to properly organize use statements
+     */
     public function updateConsoleFile(): bool
     {
         $path = base_path('routes/console.php');

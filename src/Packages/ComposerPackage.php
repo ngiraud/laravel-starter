@@ -41,6 +41,11 @@ abstract class ComposerPackage
 
     abstract public function install(): void;
 
+    /**
+     * Execute the package installation process
+     * 
+     * Requires the package via Composer then runs package-specific installation.
+     */
     final public function run(): void
     {
         if ($this->composer->hasPackage($this->require)) {
@@ -52,6 +57,9 @@ abstract class ComposerPackage
         $this->install();
     }
 
+    /**
+     * Require the package via Composer with appropriate flags and version
+     */
     protected function requirePackage(): void
     {
         $arguments = collect()

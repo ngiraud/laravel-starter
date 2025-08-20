@@ -15,7 +15,13 @@ final class UpdateEnvironmentAction
     private array $preferences;
 
     /**
-     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
+     * Update environment file with user preferences and Docker service configurations
+     *
+     * Applies base configuration (app name, locale, mail settings) and configures
+     * Redis and Minio services based on selected Docker services.
+     *
+     * @param string $path Path to the environment file (.env or .env.example)
+     * @param array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string} $preferences
      */
     public function handle(string $path, array $preferences): void
     {
@@ -31,6 +37,9 @@ final class UpdateEnvironmentAction
         $this->writeEnvironmentFile($path, $environment);
     }
 
+    /**
+     * Read environment file content and validate it exists
+     */
     private function readEnvironmentFile(string $path): string
     {
         $content = file_get_contents($path);
@@ -42,6 +51,9 @@ final class UpdateEnvironmentAction
         return $content;
     }
 
+    /**
+     * Write content to environment file and validate success
+     */
     private function writeEnvironmentFile(string $path, string $content): void
     {
         if (file_put_contents($path, $content) === false) {
@@ -49,6 +61,11 @@ final class UpdateEnvironmentAction
         }
     }
 
+    /**
+     * Apply base application configuration to environment content
+     *
+     * Updates app name, locale, faker locale, session driver, and mail settings.
+     */
     private function applyBaseConfiguration(string $content): string
     {
         $fakerLocale = sprintf('%s_%s', $this->preferences['locale'], Str::upper($this->preferences['locale']));
@@ -67,6 +84,11 @@ final class UpdateEnvironmentAction
         return str_replace(array_keys($replacements), array_values($replacements), $content);
     }
 
+    /**
+     * Configure Redis settings in environment content if Redis service is selected
+     *
+     * Updates session driver, queue connection, and cache store to use Redis.
+     */
     private function configureRedis(string $content): string
     {
         if (! in_array('redis', $this->preferences['dockerServices'])) {
@@ -82,6 +104,12 @@ final class UpdateEnvironmentAction
         return str_replace(array_keys($replacements), array_values($replacements), $content);
     }
 
+    /**
+     * Configure Minio (AWS S3 compatible) settings if Minio service is selected
+     *
+     * Updates filesystem disk to S3, sets AWS credentials for local development,
+     * and configures S3 endpoints for Minio.
+     */
     private function configureMinio(string $content): string
     {
         if (! in_array('minio', $this->preferences['dockerServices'])) {

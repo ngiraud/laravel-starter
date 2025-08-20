@@ -17,6 +17,11 @@ final class LaravelTelescope extends ComposerPackage
 
     public bool $installByDefault = true;
 
+    /**
+     * Install Laravel Telescope package
+     * 
+     * Cleans up existing telescope migrations and runs telescope:install command.
+     */
     public function install(): void
     {
         // Clean up existing telescope migrations

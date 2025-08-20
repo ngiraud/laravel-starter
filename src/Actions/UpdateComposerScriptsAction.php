@@ -16,6 +16,12 @@ final readonly class UpdateComposerScriptsAction
         $this->composer = app('composer');
     }
 
+    /**
+     * Update composer.json with development and testing scripts
+     *
+     * Adds scripts for parallel development (dev), SSR builds (dev:ssr), 
+     * linting, testing, and static analysis based on installed packages.
+     */
     public function handle(): void
     {
         $this->composer->modify(function (array $composer) {
@@ -39,6 +45,11 @@ final readonly class UpdateComposerScriptsAction
         ]);
     }
 
+    /**
+     * Get the appropriate queue command based on installed packages
+     *
+     * Returns Horizon command if available, otherwise falls back to basic queue listener.
+     */
     private function getQueueCommand(): string
     {
         return match ($this->composer->hasPackage('laravel/horizon')) {

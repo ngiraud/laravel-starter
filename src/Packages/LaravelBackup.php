@@ -17,6 +17,11 @@ final class LaravelBackup extends ComposerPackage
 
     public bool $installByDefault = true;
 
+    /**
+     * Install Laravel Backup package
+     * 
+     * Publishes configuration, copies language files, and sets up backup schedules.
+     */
     public function install(): void
     {
         ProcessRunner::sail()->run('php artisan vendor:publish --provider="Spatie\\Backup\\BackupServiceProvider" --tag=backup-config');
@@ -26,6 +31,9 @@ final class LaravelBackup extends ComposerPackage
         $this->modifyConsoleFile();
     }
 
+    /**
+     * Modify backup configuration file with custom settings
+     */
     private function modifyConfigFile(): void
     {
         $path = base_path('config/backup.php');
@@ -61,6 +69,9 @@ final class LaravelBackup extends ComposerPackage
         file_put_contents($path, $config);
     }
 
+    /**
+     * Add backup commands to console schedule
+     */
     private function modifyConsoleFile(): void
     {
         $path = base_path('routes/console.php');
