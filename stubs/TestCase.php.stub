@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    use RefreshDatabase;
+
+    protected ?User $user = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
+    protected function authenticate(?User $user = null): static
+    {
+        if (is_null($user)) {
+            $user = User::factory()->create();
+        }
+
+        $this->user = $user;
+
+        return $this->actingAs($this->user);
+    }
+}

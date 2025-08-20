@@ -89,13 +89,17 @@ final class LaravelStarterCommand extends Command
 
         $this->installComposerPackages();
 
+        // @todo
+        // Commit after each step (composer package at least)
+        // Run rector, pint at the end
+
         $this->newLine(2);
         $this->copyFiles();
         $this->modifyConsoleFile();
         $this->modifyComposerFile();
 
-        $this->newLine(2);
-        $this->components->info('Packages have been installed.');
+        $this->newLine();
+        $this->components->success('Packages have been installed.');
 
         $this->newLine(2);
         $this->installFrontendDependencies();
@@ -104,6 +108,7 @@ final class LaravelStarterCommand extends Command
         $this->newLine(2);
         $this->components->success('Installation completed! Now start the local server and enjoy!');
         $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail composer dev</>');
+        $this->newLine();
 
         return self::SUCCESS;
     }
@@ -250,10 +255,21 @@ final class LaravelStarterCommand extends Command
     private function copyFiles(): void
     {
         $this->components->info('Publishing pint.json config file');
-        $this->files->copy(__DIR__.'/../../stubs/pint/pint.json.stub', base_path('pint.json'));
+        $this->files->copy(__DIR__.'/../../stubs/pint.json.stub', base_path('pint.json'));
 
         $this->components->info('Publishing AppServiceProvider class');
-        $this->files->copy(__DIR__.'/../../stubs/providers/AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
+        $this->files->copy(__DIR__.'/../../stubs/AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
+
+        $this->components->info('Publishing User model');
+        $this->files->copy(__DIR__.'/../../stubs/User.php.stub', app_path('Models/User.php'));
+
+        $this->copyWebLocalFile();
+
+        $this->components->info('Publishing updated TestCase.php');
+        //        $this->files->delete(base_path('tests/TestCase.php'));
+        $this->files->copy(__DIR__.'/../../stubs/TestCase.php.stub', base_path('tests/TestCase.php'));
+
+        $this->copyGithubActions();
 
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");
@@ -374,6 +390,51 @@ final class LaravelStarterCommand extends Command
 
             return $composer;
         });
+    }
+
+    private function copyWebLocalFile(): void
+    {
+        $this->components->info('Publishing web-local.php class');
+        $this->files->copy(__DIR__.'/../../stubs/web-local.php.stub', base_path('routes/web-local.php'));
+
+        $path = base_path('routes/web.php');
+
+        if ((($web = file_get_contents($path))) === false) {
+            throw new Exception("Unable to read {$path} file");
+        }
+
+        if (str_contains($web, "require __DIR__.'/web-local.php';")) {
+            return;
+        }
+
+        $this->components->info("Updating {$path}...");
+
+        $web .= <<<'EOT'
+        
+        if (app()->isLocal()) {
+            require __DIR__.'/web-local.php';
+        }
+        EOT;
+
+        file_put_contents($path, $web);
+    }
+
+    private function copyGithubActions(): void
+    {
+        $this->components->info('Publishing Github Actions');
+        $this->files->deleteDirectory(base_path('.github'));
+        $this->files->copyDirectory(__DIR__.'/../../stubs/.github', base_path('.github'));
+
+        if (in_array('mysql', $this->dockerServices)) {
+            $this->files->copy(base_path('.github/workflows/tests-mysql.yml'), base_path('.github/workflows/tests.yml'));
+        }
+
+        if (in_array('pgsql', $this->dockerServices)) {
+            $this->files->copy(base_path('.github/workflows/tests-pgsql.yml'), base_path('.github/workflows/tests.yml'));
+        }
+
+        $this->files->delete(base_path('.github/workflows/tests-mysql.yml'));
+        $this->files->delete(base_path('.github/workflows/tests-pgsql.yml'));
     }
 
     private function installFrontendDependencies(): void

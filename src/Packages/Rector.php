@@ -16,6 +16,6 @@ final class Rector extends ComposerPackage
 
     public function install(): void
     {
-        $this->files->copy(__DIR__.'/../../stubs/rector/rector.php.stub', base_path('rector.php'));
+        $this->files->copy(__DIR__.'/../../stubs/rector.php.stub', base_path('rector.php'));
     }
 }

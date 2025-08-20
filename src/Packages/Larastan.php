@@ -18,6 +18,6 @@ final class Larastan extends ComposerPackage
 
     public function install(): void
     {
-        $this->files->copy(__DIR__.'/../../stubs/larastan/phpstan.neon.stub', base_path('phpstan.neon'));
+        $this->files->copy(__DIR__.'/../../stubs/phpstan.neon.stub', base_path('phpstan.neon'));
     }
 }
