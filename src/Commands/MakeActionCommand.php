@@ -70,7 +70,6 @@ final class MakeActionCommand extends GeneratorCommand
     {
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
-        // Use the app_path helper to get the correct path
         return app_path(str_replace('\\', '/', $name).'.php');
     }
 

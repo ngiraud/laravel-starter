@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Illuminate\Console\Concerns\InteractsWithIO;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
@@ -41,6 +41,11 @@ abstract class ComposerPackage
 
     abstract public function install(): void;
 
+    /**
+     * Execute the package installation process
+     *
+     * Requires the package via Composer then runs package-specific installation.
+     */
     final public function run(): void
     {
         if ($this->composer->hasPackage($this->require)) {
@@ -52,6 +57,9 @@ abstract class ComposerPackage
         $this->install();
     }
 
+    /**
+     * Require the package via Composer with appropriate flags and version
+     */
     protected function requirePackage(): void
     {
         $arguments = collect()
@@ -65,6 +73,6 @@ abstract class ComposerPackage
             )
             ->merge($this->extraArguments);
 
-        TerminalCommand::sail()->run("composer require {$this->require} {$arguments->implode(' ')}");
+        ProcessRunner::sail()->run("composer require {$this->require} {$arguments->implode(' ')}");
     }
 }
