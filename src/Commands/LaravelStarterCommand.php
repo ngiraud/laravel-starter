@@ -35,11 +35,11 @@ final class LaravelStarterCommand extends Command
 
     public $description = 'Prepare everything after a fresh Laravel installation';
 
-    protected UpdateEnvironmentAction $updateEnvironmentAction;
+    private UpdateEnvironmentAction $updateEnvironmentAction;
 
-    protected PublishFilesAction $publishFilesAction;
+    private PublishFilesAction $publishFilesAction;
 
-    protected UpdateComposerScriptsAction $updateComposerScriptsAction;
+    private UpdateComposerScriptsAction $updateComposerScriptsAction;
 
     /**
      * @var array<int, string>

@@ -20,8 +20,8 @@ final class UpdateEnvironmentAction
      * Applies base configuration (app name, locale, mail settings) and configures
      * Redis and Minio services based on selected Docker services.
      *
-     * @param string $path Path to the environment file (.env or .env.example)
-     * @param array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string} $preferences
+     * @param  string  $path  Path to the environment file (.env or .env.example)
+     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
      */
     public function handle(string $path, array $preferences): void
     {

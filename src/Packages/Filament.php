@@ -20,7 +20,7 @@ final class Filament extends ComposerPackage
 
     /**
      * Install Filament admin panel package
-     * 
+     *
      * Runs filament:install command with panels and default settings.
      */
     public function install(): void

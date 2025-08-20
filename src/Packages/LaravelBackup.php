@@ -19,7 +19,7 @@ final class LaravelBackup extends ComposerPackage
 
     /**
      * Install Laravel Backup package
-     * 
+     *
      * Publishes configuration, copies language files, and sets up backup schedules.
      */
     public function install(): void

@@ -19,7 +19,7 @@ final readonly class UpdateComposerScriptsAction
     /**
      * Update composer.json with development and testing scripts
      *
-     * Adds scripts for parallel development (dev), SSR builds (dev:ssr), 
+     * Adds scripts for parallel development (dev), SSR builds (dev:ssr),
      * linting, testing, and static analysis based on installed packages.
      */
     public function handle(): void

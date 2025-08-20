@@ -43,7 +43,7 @@ abstract class ComposerPackage
 
     /**
      * Execute the package installation process
-     * 
+     *
      * Requires the package via Composer then runs package-specific installation.
      */
     final public function run(): void

@@ -18,7 +18,7 @@ final class LaravelHorizon extends ComposerPackage
 
     /**
      * Install Laravel Horizon package
-     * 
+     *
      * Runs horizon:install command and updates console.php with Horizon schedule.
      */
     public function install(): void
