@@ -36,7 +36,7 @@ final class LaravelStarterCommand extends Command
     public $description = 'Prepare everything after a fresh Laravel installation';
 
     /**
-     * @var array<int|string>
+     * @var array<int, string>
      */
     private array $dockerServices;
 
@@ -99,6 +99,7 @@ final class LaravelStarterCommand extends Command
             ...Arr::reject($this->services, fn ($service): bool => in_array($service, $this->defaultDockerServices)),
         ];
 
+        /** @var array<int, string> $dockerServices */
         $dockerServices = multiselect(
             label: 'Which services would you like to install?',
             options: $options,
@@ -126,10 +127,10 @@ final class LaravelStarterCommand extends Command
         $packages = config()->array('starter.packages', []);
         $composerPackages = PackagesCollection::from($packages);
 
-        /** @var array<string, string> $options */
+        /** @var array<string, string> $packageOptions */
         $packageOptions = $composerPackages->pluck('name', 'require');
 
-        /** @var array<int, string> $default */
+        /** @var array<int, string> $defaultPackages */
         $defaultPackages = $composerPackages->installedByDefault()->pluck('require');
 
         /** @var array<int, string> $selectedPackages */

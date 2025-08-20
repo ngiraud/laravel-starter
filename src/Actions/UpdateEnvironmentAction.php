@@ -9,8 +9,14 @@ use Illuminate\Support\Str;
 
 final class UpdateEnvironmentAction
 {
+    /**
+     * @var array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
+     */
     private array $preferences;
 
+    /**
+     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
+     */
     public function handle(string $path, array $preferences): void
     {
         $this->preferences = $preferences;
@@ -90,10 +96,9 @@ final class UpdateEnvironmentAction
             "AWS_URL=http://minio.{$this->preferences['appName']}.orb.local:9000/public",
         ]), $content);
 
-        $content = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', $content);
-        $content = preg_replace('/AWS_SECRET_ACCESS_KEY=.*/', 'AWS_SECRET_ACCESS_KEY=password', $content);
-        $content = preg_replace('/AWS_BUCKET=.*/', 'AWS_BUCKET=local', $content);
+        $content = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', $content) ?? $content;
+        $content = preg_replace('/AWS_SECRET_ACCESS_KEY=.*/', 'AWS_SECRET_ACCESS_KEY=password', $content) ?? $content;
 
-        return $content;
+        return preg_replace('/AWS_BUCKET=.*/', 'AWS_BUCKET=local', $content) ?? $content;
     }
 }

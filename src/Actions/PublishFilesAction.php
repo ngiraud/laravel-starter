@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Actions;
 
 use BerryValley\LaravelStarter\Exceptions\StarterInstallationException;
+use Exception;
 use Illuminate\Filesystem\Filesystem;
 
-final class PublishFilesAction
+final readonly class PublishFilesAction
 {
     private const string STUB_PATH = __DIR__.'/../../stubs';
 
     public function __construct(
-        private readonly Filesystem $files
+        private Filesystem $files
     ) {}
 
     public function publishConfigFiles(): void
@@ -48,6 +49,9 @@ final class PublishFilesAction
         }
     }
 
+    /**
+     * @param  array<int, string>  $dockerServices
+     */
     public function publishGithubActions(array $dockerServices): void
     {
         $this->files->deleteDirectory(base_path('.github'));
@@ -86,14 +90,14 @@ final class PublishFilesAction
     private function publishFile(string $stub, string $destination): void
     {
         $sourcePath = self::STUB_PATH.'/'.$stub;
-        
+
         if (! $this->files->exists($sourcePath)) {
             throw StarterInstallationException::fileOperationFailed('find stub', $sourcePath);
         }
 
         try {
             $this->files->copy($sourcePath, $destination);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             throw StarterInstallationException::fileOperationFailed('copy', $destination);
         }
     }
@@ -125,6 +129,9 @@ final class PublishFilesAction
         return true;
     }
 
+    /**
+     * @param  array<int, string>  $dockerServices
+     */
     private function configureGithubWorkflows(array $dockerServices): void
     {
         if (in_array('mysql', $dockerServices)) {

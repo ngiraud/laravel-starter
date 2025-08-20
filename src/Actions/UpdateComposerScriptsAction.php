@@ -7,9 +7,9 @@ namespace BerryValley\LaravelStarter\Actions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Composer;
 
-final class UpdateComposerScriptsAction
+final readonly class UpdateComposerScriptsAction
 {
-    private readonly Composer $composer;
+    private Composer $composer;
 
     public function __construct(
     ) {
@@ -26,6 +26,9 @@ final class UpdateComposerScriptsAction
         });
     }
 
+    /**
+     * @return Collection<int, array{color: string, command: string, name: string}>
+     */
     private function buildCommands(): Collection
     {
         return collect([
@@ -44,6 +47,10 @@ final class UpdateComposerScriptsAction
         };
     }
 
+    /**
+     * @param  Collection<int, array{color: string, command: string, name: string}>  $commands
+     * @return array<string, array<int, string>>
+     */
     private function buildScripts(Collection $commands): array
     {
         $devCommands = $commands->where('name', '!=', 'ssr');
@@ -86,12 +93,17 @@ final class UpdateComposerScriptsAction
         return $scripts;
     }
 
+    /**
+     * @param  Collection<int, array{color: string, command: string, name: string}>  $commands
+     */
     private function buildConcurrentlyCommand(Collection $commands): string
     {
         return sprintf(
             'npx concurrently -c "%s" %s --names=%s --kill-others',
             $commands->pluck('color')->implode(','),
-            $commands->map(fn (array $command): string => "\"{$command['command']}\"")->implode(' '),
+            $commands->map(fn (array $command): string =>
+                /** @var array{color: string, command: string, name: string} $command */
+                "\"{$command['command']}\"")->implode(' '),
             $commands->pluck('name')->implode(',')
         );
     }
