@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Exception;
 
 final class LaravelBackup extends ComposerPackage
@@ -19,7 +19,7 @@ final class LaravelBackup extends ComposerPackage
 
     public function install(): void
     {
-        TerminalCommand::sail()->run('php artisan vendor:publish --provider="Spatie\\Backup\\BackupServiceProvider" --tag=backup-config');
+        ProcessRunner::sail()->run('php artisan vendor:publish --provider="Spatie\\Backup\\BackupServiceProvider" --tag=backup-config');
         $this->files->copyDirectory(__DIR__.'/../../stubs/lang/vendor/backup', lang_path('vendor/backup'));
 
         $this->modifyConfigFile();

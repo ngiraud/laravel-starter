@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Commands;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Actions\PublishFilesAction;
+use BerryValley\LaravelStarter\Actions\UpdateComposerScriptsAction;
+use BerryValley\LaravelStarter\Actions\UpdateEnvironmentAction;
+use BerryValley\LaravelStarter\Exceptions\StarterInstallationException;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use BerryValley\LaravelStarter\Packages\ComposerPackage;
 use BerryValley\LaravelStarter\Packages\FlysystemAwsS3;
 use BerryValley\LaravelStarter\Support\PackagesCollection;
@@ -47,69 +51,62 @@ final class LaravelStarterCommand extends Command
 
     private string $selectedLocale = 'fr';
 
-    private PackagesCollection $composerPackages;
-
     public function handle(Filesystem $files): int
     {
-        $this->files = $files;
-        $this->composer = app('composer');
+        try {
+            $this->files = $files;
+            $this->composer = app('composer');
 
-        if (! $this->composer->hasPackage('laravel/sail')) {
-            $this->components->error('Please install Laravel Sail first.');
+            if (! $this->composer->hasPackage('laravel/sail')) {
+                throw StarterInstallationException::sailNotInstalled();
+            }
+
+            $preferences = $this->collectUserPreferences();
+            $this->dockerServices = $preferences['dockerServices'];
+            $this->selectedLocale = $preferences['locale'];
+
+            $this->initializeGit();
+            $this->updateEnvironmentFiles($preferences);
+
+            if (! $this->installSail($preferences['dockerServices'])) {
+                return self::FAILURE;
+            }
+
+            $this->installComposerPackages($preferences['selectedPackages']);
+            $this->publishFiles();
+            $this->installFrontendDependencies();
+            $this->migrateDatabase();
+            $this->applyFinalOptimizations();
+
+            $this->displayCompletionMessage();
+
+            return self::SUCCESS;
+        } catch (StarterInstallationException $e) {
+            $this->components->error($e->getMessage());
 
             return self::FAILURE;
         }
+    }
 
+    /**
+     * @return array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
+     */
+    private function collectUserPreferences(): array
+    {
         /** @var array<int, string> $options */
         $options = [
             ...$this->defaultDockerServices,
             ...Arr::reject($this->services, fn ($service): bool => in_array($service, $this->defaultDockerServices)),
         ];
 
-        $this->dockerServices = multiselect(
+        $dockerServices = multiselect(
             label: 'Which services would you like to install?',
             options: $options,
             default: $this->defaultDockerServices,
         );
 
-        /** @var array<int, string> $packages */
-        $packages = config()->array('starter.packages', []);
-
-        $this->composerPackages = PackagesCollection::from($packages);
-
-        if (in_array('minio', $this->dockerServices)) {
-            $this->composerPackages->addPackages(FlysystemAwsS3::class);
-        }
-
-        $this->initializeGit();
-
-        $this->editEnvironmentFiles();
-
-        if (! $this->installSail()) {
-            return self::FAILURE;
-        }
-
-        $this->installComposerPackages();
-
-        $this->copyFiles();
-        $this->modifyConsoleFile();
-        $this->modifyComposerFile();
-        $this->installFrontendDependencies();
-        $this->migrateDatabase();
-
-        $this->finishInstallation();
-
-        return self::SUCCESS;
-    }
-
-    private function editEnvironmentFiles(): void
-    {
-        $this->components->info('Editing .env and .env.example files');
-
         $projectName = Str::of(base_path())->basename();
-
         $database = $projectName->snake()->value();
-
         $defaultAppName = $projectName->pascal()->value();
 
         $appName = text(
@@ -117,89 +114,74 @@ final class LaravelStarterCommand extends Command
             default: $defaultAppName,
         );
 
-        $appName = Str::of($appName)
-            ->trim()
-            ->wrap('"')
-            ->value();
+        $appName = Str::of($appName)->trim()->wrap('"')->value();
 
-        $this->selectedLocale = (string) select(
+        $locale = (string) select(
             label: 'Which locale do you want to use?',
             options: ['fr', 'en'],
             default: 'fr',
         );
 
-        $fakerLocale = sprintf('%s_%s', $this->selectedLocale, Str::upper($this->selectedLocale));
+        /** @var array<int, string> $packages */
+        $packages = config()->array('starter.packages', []);
+        $composerPackages = PackagesCollection::from($packages);
 
-        $envPath = base_path('.env');
-        $envExamplePath = base_path('.env.example');
+        /** @var array<string, string> $options */
+        $packageOptions = $composerPackages->pluck('name', 'require');
 
-        if ((($environment = file_get_contents($envPath))) === false) {
-            throw new Exception('Unable to read .env file');
+        /** @var array<int, string> $default */
+        $defaultPackages = $composerPackages->installedByDefault()->pluck('require');
+
+        /** @var array<int, string> $selectedPackages */
+        $selectedPackages = multiselect(
+            label: 'Which composer dependencies would you like to install?',
+            options: $packageOptions,
+            default: $defaultPackages,
+            scroll: 10
+        );
+
+        return [
+            'dockerServices' => $dockerServices,
+            'selectedPackages' => $selectedPackages,
+            'appName' => $appName,
+            'locale' => $locale,
+            'database' => $database,
+        ];
+    }
+
+    private function initializeGit(): void
+    {
+        if (! $this->files->exists(base_path('.git'))) {
+            $this->components->info(ProcessRunner::git()->initialize());
         }
 
-        if ((($environmentExample = file_get_contents($envExamplePath))) === false) {
-            throw new Exception('Unable to read .env.example file');
-        }
+        $this->commit('Initial commit');
+    }
 
-        $environment = str_replace('APP_NAME=Laravel', "APP_NAME={$appName}", $environment);
-        $environmentExample = str_replace('APP_NAME=Laravel', "APP_NAME={$appName}", $environmentExample);
+    /**
+     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
+     */
+    private function updateEnvironmentFiles(array $preferences): void
+    {
+        $this->components->info('Updating environment files');
 
-        $environment = str_replace('APP_LOCALE=en', "APP_LOCALE={$this->selectedLocale}", $environment);
-        $environmentExample = str_replace('APP_LOCALE=en', "APP_LOCALE={$this->selectedLocale}", $environmentExample);
-
-        $environment = str_replace('APP_FAKER_LOCALE=en_US', "APP_FAKER_LOCALE={$fakerLocale}", $environment);
-        $environmentExample = str_replace('APP_FAKER_LOCALE=en_US', "APP_FAKER_LOCALE={$fakerLocale}", $environmentExample);
-
-        $environment = str_replace('SESSION_DRIVER=database', 'SESSION_DRIVER=cookie', $environment);
-        $environmentExample = str_replace('SESSION_DRIVER=database', 'SESSION_DRIVER=cookie', $environmentExample);
-
-        $environment = str_replace('MAIL_MAILER=log', 'MAIL_MAILER=smtp', $environment);
-        $environment = str_replace('MAIL_HOST=127.0.0.1', 'MAIL_HOST=host.docker.internal', $environment);
-        $environment = str_replace('MAIL_USERNAME=null', 'MAIL_USERNAME="${APP_NAME}"', $environment);
-        $environment = str_replace('MAIL_FROM_ADDRESS="hello@example.com"', 'MAIL_FROM_ADDRESS="support@'.$database.'.local"', $environment);
-
-        if (in_array('redis', $this->dockerServices)) {
-            $environment = str_replace('SESSION_DRIVER=cookie', 'SESSION_DRIVER=redis', $environment);
-            $environmentExample = str_replace('SESSION_DRIVER=cookie', 'SESSION_DRIVER=redis', $environmentExample);
-
-            $environment = str_replace('QUEUE_CONNECTION=database', 'QUEUE_CONNECTION=redis', $environment);
-            $environmentExample = str_replace('QUEUE_CONNECTION=database', 'QUEUE_CONNECTION=redis', $environmentExample);
-
-            $environment = str_replace('CACHE_STORE=database', 'CACHE_STORE=redis', $environment);
-            $environmentExample = str_replace('CACHE_STORE=database', 'CACHE_STORE=redis', $environmentExample);
-        }
-
-        if (in_array('minio', $this->dockerServices)) {
-            $environment = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $environment);
-            $environmentExample = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $environmentExample);
-
-            $environment = str_replace('AWS_USE_PATH_STYLE_ENDPOINT=false', implode("\n", [
-                'AWS_USE_PATH_STYLE_ENDPOINT=true',
-                'AWS_ENDPOINT=http://localhost:9000',
-                "AWS_URL=http://minio.{$projectName}.orb.local:9000/public",
-            ]), $environment);
-
-            $environment = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', (string) $environment);
-            $environment = preg_replace('/AWS_SECRET_ACCESS_KEY=.*/', 'AWS_SECRET_ACCESS_KEY=password', (string) $environment);
-            $environment = preg_replace('/AWS_BUCKET=.*/', 'AWS_BUCKET=local', (string) $environment);
-        }
-
-        file_put_contents($envPath, $environment);
-        file_put_contents($envExamplePath, $environmentExample);
+        app(UpdateEnvironmentAction::class)->handle(base_path('.env'), $preferences);
+        app(UpdateEnvironmentAction::class)->handle(base_path('.env.example'), $preferences);
 
         $this->commit('Update .env and .env.example files');
     }
 
-    private function installSail(): bool
+    /**
+     * @param  array<int, string>  $dockerServices
+     */
+    private function installSail(array $dockerServices): bool
     {
         $this->components->info('Installing Sail');
 
         if (! file_exists(base_path('docker-compose.yml'))) {
             $this->call('sail:install', [
-                '--with' => implode(',', $this->dockerServices),
+                '--with' => implode(',', $dockerServices),
             ]);
-
-            $this->commit('Installing Laravel Sail');
         }
 
         $this->newLine();
@@ -210,241 +192,70 @@ final class LaravelStarterCommand extends Command
         return pause('Press ENTER to continue.');
     }
 
-    private function installComposerPackages(): void
+    /**
+     * @param  array<int, string>  $selectedPackages
+     */
+    private function installComposerPackages(array $selectedPackages): void
     {
-        $this->newLine();
+        /** @var array<int, string> $packages */
+        $packages = config()->array('starter.packages', []);
+        $composerPackages = PackagesCollection::from($packages);
 
-        /** @var array<string, string> $options */
-        $options = $this->composerPackages->pluck('name', 'require');
+        if (in_array('minio', $this->dockerServices)) {
+            $composerPackages->addPackages(FlysystemAwsS3::class);
+        }
 
-        /** @var array<int, string> $default */
-        $default = $this->composerPackages->installedByDefault()->pluck('require');
+        $composerPackages->shouldInstall($selectedPackages)->each(function (ComposerPackage $package): void {
+            if ($this->composer->hasPackage($package->require)) {
+                $this->components->warn("{$package->name} is already installed. Skipping.");
 
-        /** @var array<int, string> $selected */
-        $selected = multiselect(
-            label: 'Which composer dependencies would you like to install?',
-            options: $options,
-            default: $default,
-            scroll: 10
-        );
+                return;
+            }
 
-        $this->composerPackages
-            ->shouldInstall($selected)
-            ->each(function (ComposerPackage $package): void {
-                if ($this->composer->hasPackage($package->require)) {
-                    $this->components->warn("{$package->name} is already installed. Moving to the next package.");
+            $this->newLine(2);
+            $this->components->info("Installing {$package->name}");
 
-                    return;
-                }
-
-                $this->newLine(2);
-
-                $this->components->info(sprintf('Installing %s', $package->name));
-
+            try {
                 $package->run();
-
-                $this->commit(sprintf('Installing %s', $package->name));
-            });
+                $this->commit("Installing {$package->name}");
+            } catch (Exception $e) {
+                throw StarterInstallationException::packageInstallationFailed($package->name, $e->getMessage());
+            }
+        });
     }
 
-    private function copyFiles(): void
+    private function publishFiles(): void
     {
+        $publishFilesAction = app(PublishFilesAction::class, ['files' => $this->files]);
+
         $this->newLine();
 
-        $this->components->info('Publishing pint.json config file');
-        $this->files->copy(__DIR__.'/../../stubs/pint.json.stub', base_path('pint.json'));
+        $this->components->info('Publishing configuration files');
+        $publishFilesAction->publishConfigFiles();
 
-        $this->components->info('Publishing AppServiceProvider class');
-        $this->files->copy(__DIR__.'/../../stubs/AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
+        $this->components->info('Publishing web-local.php file');
+        $publishFilesAction->publishWebLocalFile();
 
-        $this->components->info('Publishing User model');
-        $this->files->copy(__DIR__.'/../../stubs/User.php.stub', app_path('Models/User.php'));
-
-        $this->copyWebLocalFile();
-
-        $this->components->info('Publishing updated TestCase.php');
-        //        $this->files->delete(base_path('tests/TestCase.php'));
-        $this->files->copy(__DIR__.'/../../stubs/TestCase.php.stub', base_path('tests/TestCase.php'));
-
-        $this->copyGithubActions();
+        $this->components->info('Publishing Github Actions');
+        $publishFilesAction->publishGithubActions($this->dockerServices);
 
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");
-
-            if ($this->files->exists($path = __DIR__."/../../stubs/lang/{$this->selectedLocale}")) {
-                $this->files->copyDirectory($path, lang_path($this->selectedLocale));
-            }
-
-            if ($this->files->exists($path = __DIR__."/../../stubs/lang/{$this->selectedLocale}.json")) {
-                $this->files->copy($path, lang_path("{$this->selectedLocale}.json"));
-            }
+            $publishFilesAction->publishLanguageFiles($this->selectedLocale);
         }
 
         $this->commit('Publishing stub files');
-    }
 
-    private function modifyConsoleFile(): void
-    {
-        $path = base_path('routes/console.php');
+        $this->components->info('Updating console.php file');
 
-        if ((($console = file_get_contents($path))) === false) {
-            throw new Exception("Unable to read {$path} file");
+        if ($publishFilesAction->updateConsoleFile()) {
+            $this->commit('Modify console.php file');
         }
 
-        if (! str_contains($console, 'Schedule::')) {
-            return;
-        }
-
-        $this->components->info("Updating {$path}...");
-
-        $console = str_replace('use Illuminate\Support\Facades\Schedule;', '', $console);
-
-        $console = str_replace('use Illuminate\Support\Facades\Artisan;', implode("\n", [
-            'use Illuminate\Support\Facades\Artisan;',
-            'use Illuminate\Support\Facades\Schedule;',
-        ]), $console);
-
-        file_put_contents($path, $console);
-
-        $this->commit('Modify console.php file');
-    }
-
-    private function modifyComposerFile(): void
-    {
         $this->components->info('Modifying composer.json');
 
-        $this->composer->modify(function (array $composer) {
-            $commands = collect([
-                ['color' => '#93c5fd', 'command' => 'php artisan pail --timeout=0', 'name' => 'logs'],
-                ['color' => '#fdba74', 'command' => 'npm run dev', 'name' => 'vite'],
-                ['color' => '#fdba74', 'command' => 'php artisan inertia:start-ssr', 'name' => 'ssr'],
-            ]);
-
-            $queueCommand = match ($this->composer->hasPackage('laravel/horizon')) {
-                true => 'php artisan horizon',
-                false => 'php artisan queue:listen database --tries=1 --queue=default',
-            };
-
-            $commands[] = ['color' => '#93c5fd', 'command' => $queueCommand, 'name' => 'queue'];
-
-            $devCommands = $commands->where('name', '!=', 'ssr');
-            $ssrCommands = $commands->where('name', '!=', 'vite');
-
-            /** @var array<string,string|array<int,string>> $scripts */
-            $scripts = $composer['scripts'] ?? [];
-
-            $scripts['dev'] = [
-                'Composer\\Config::disableProcessTimeout',
-                sprintf(
-                    'npx concurrently -c \"%s\" %s --names=%s --kill-others',
-                    $devCommands->pluck('color')->implode(','),
-                    $devCommands->map(fn (array $command): string => "\"{$command['command']}\"")->implode(' '),
-                    $devCommands->pluck('name')->implode(',')
-                ),
-            ];
-
-            $scripts['dev:ssr'] = [
-                'npm run build:ssr',
-                'Composer\\Config::disableProcessTimeout',
-                sprintf(
-                    'npx concurrently -c \"%s\" %s --names=%s --kill-others',
-                    $ssrCommands->pluck('color')->implode(','),
-                    $ssrCommands->map(fn (array $command): string => "\"{$command['command']}\"")->implode(' '),
-                    $ssrCommands->pluck('name')->implode(',')
-                ),
-            ];
-
-            $scripts['lint'] = [
-                'pint --parallel',
-            ];
-
-            if ($hasRectorDependency = $this->composer->hasPackage('rector/rector')) {
-                $scripts['refactor'] = [
-                    'rector',
-                ];
-            }
-
-            $scripts['test'] = [
-                '@php artisan config:clear --ansi',
-                sprintf('@php artisan test %s--compact --coverage --min=90', $this->composer->hasPackage('brianium/paratest') ? '--parallel' : ''),
-            ];
-
-            $scripts['test:lint'] = [
-                'pint --parallel --test',
-                'npm run lint',
-                'npm run format:check',
-            ];
-
-            if ($this->composer->hasPackage('larastan/larastan')) {
-                $scripts['test:types'] = [
-                    'phpstan',
-                ];
-            }
-
-            if ($hasRectorDependency) {
-                $scripts['test:refactor'] = [
-                    'rector --dry-run',
-                ];
-            }
-
-            $composer['scripts'] = $scripts;
-
-            return $composer;
-        });
-
-        $this->newLine();
-        $this->components->success('Packages have been installed.');
-
+        app(UpdateComposerScriptsAction::class)->handle();
         $this->commit('Modify composer.json file');
-    }
-
-    private function copyWebLocalFile(): void
-    {
-        $this->components->info('Publishing web-local.php class');
-        $this->files->copy(__DIR__.'/../../stubs/web-local.php.stub', base_path('routes/web-local.php'));
-
-        $path = base_path('routes/web.php');
-
-        if ((($web = file_get_contents($path))) === false) {
-            throw new Exception("Unable to read {$path} file");
-        }
-
-        if (str_contains($web, "require __DIR__.'/web-local.php';")) {
-            return;
-        }
-
-        $this->components->info("Updating {$path}...");
-
-        $web .= <<<'EOT'
-        
-        if (app()->isLocal()) {
-            require __DIR__.'/web-local.php';
-        }
-        EOT;
-
-        file_put_contents($path, $web);
-
-        $this->commit('Publish web-local.php and modify web.php file');
-    }
-
-    private function copyGithubActions(): void
-    {
-        $this->components->info('Publishing Github Actions');
-        $this->files->deleteDirectory(base_path('.github'));
-        $this->files->copyDirectory(__DIR__.'/../../stubs/.github', base_path('.github'));
-
-        if (in_array('mysql', $this->dockerServices)) {
-            $this->files->copy(base_path('.github/workflows/tests-mysql.yml'), base_path('.github/workflows/tests.yml'));
-        }
-
-        if (in_array('pgsql', $this->dockerServices)) {
-            $this->files->copy(base_path('.github/workflows/tests-pgsql.yml'), base_path('.github/workflows/tests.yml'));
-        }
-
-        $this->files->delete(base_path('.github/workflows/tests-mysql.yml'));
-        $this->files->delete(base_path('.github/workflows/tests-pgsql.yml'));
-
-        $this->commit('Publishing Github Actions files');
     }
 
     private function installFrontendDependencies(): void
@@ -455,48 +266,31 @@ final class LaravelStarterCommand extends Command
 
         $this->newLine();
         $this->components->info('Installing frontend dependencies');
-
-        TerminalCommand::sail()->run('npm install');
-
+        ProcessRunner::sail()->run('npm install');
         $this->commit('Installing frontend dependencies');
     }
 
     private function migrateDatabase(): void
     {
-        $this->components->info('Migrate database');
-
-        TerminalCommand::sail()->run('php artisan migrate:fresh');
+        $this->components->info('Migrating database');
+        ProcessRunner::sail()->run('php artisan migrate:fresh');
     }
 
-    private function initializeGit(): void
+    private function applyFinalOptimizations(): void
     {
-        if (! $this->files->exists(base_path('.git'))) {
-            $this->output->note(TerminalCommand::git()->initialize());
-        }
+        $hasRector = $this->composer->hasPackage('rector/rector');
+        $hasPint = $this->composer->hasPackage('laravel/pint');
 
-        $this->commit('Initial commit');
-    }
-
-    private function commit(string $commit, string $semantic = 'feat'): void
-    {
-        $this->newLine();
-        $this->output->note(TerminalCommand::git()->commit($commit, $semantic));
-    }
-
-    private function finishInstallation(): void
-    {
-        if ($hasRector = $this->composer->hasPackage('rector/rector')) {
+        if ($hasRector) {
             $this->newLine();
             $this->components->info('Applying Rector rules');
-
-            TerminalCommand::sail()->run('composer refactor');
+            ProcessRunner::sail()->run('composer refactor');
         }
 
-        if ($hasPint = $this->composer->hasPackage('laravel/pint')) {
+        if ($hasPint) {
             $this->newLine();
             $this->components->info('Applying Pint rules');
-
-            TerminalCommand::sail()->run('composer lint');
+            ProcessRunner::sail()->run('composer lint');
         }
 
         if ($hasRector || $hasPint) {
@@ -507,7 +301,16 @@ final class LaravelStarterCommand extends Command
 
             $this->commit("Applying {$message} rules", 'chore');
         }
+    }
 
+    private function commit(string $message, string $semantic = 'feat'): void
+    {
+        $this->newLine();
+        $this->output->note(ProcessRunner::git()->commit($message, $semantic));
+    }
+
+    private function displayCompletionMessage(): void
+    {
         $this->newLine(2);
         $this->components->success('Installation completed!');
         $this->newLine();
@@ -518,7 +321,6 @@ final class LaravelStarterCommand extends Command
         $this->output->writeln('<fg=gray>➜</> <options=bold>git remote add origin git@github.com:your-username/your-project.git</>');
         $this->output->writeln('<fg=gray>➜</> <options=bold>git branch -M main</>');
         $this->output->writeln('<fg=gray>➜</> <options=bold>git push -u origin main</>');
-
         $this->newLine();
     }
 }

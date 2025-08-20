@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 
 final class Filament extends ComposerPackage
 {
@@ -20,6 +20,6 @@ final class Filament extends ComposerPackage
 
     public function install(): void
     {
-        TerminalCommand::sail()->run('php artisan filament:install --panels --force --no-interaction');
+        ProcessRunner::sail()->run('php artisan filament:install --panels --force --no-interaction');
     }
 }

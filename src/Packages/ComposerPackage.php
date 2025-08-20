@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Illuminate\Console\Concerns\InteractsWithIO;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
@@ -65,6 +65,6 @@ abstract class ComposerPackage
             )
             ->merge($this->extraArguments);
 
-        TerminalCommand::sail()->run("composer require {$this->require} {$arguments->implode(' ')}");
+        ProcessRunner::sail()->run("composer require {$this->require} {$arguments->implode(' ')}");
     }
 }

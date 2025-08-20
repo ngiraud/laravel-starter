@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-use BerryValley\LaravelStarter\Facades\TerminalCommand;
+use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Illuminate\Support\Str;
 
 final class LaravelTelescope extends ComposerPackage
@@ -19,12 +19,14 @@ final class LaravelTelescope extends ComposerPackage
 
     public function install(): void
     {
+        // Clean up existing telescope migrations
         foreach ($this->files->allFiles(database_path('migrations')) as $file) {
             if (Str::contains($file->getFilename(), 'telescope')) {
                 $this->files->delete($file->getPathname());
             }
         }
 
-        TerminalCommand::sail()->run('php artisan telescope:install');
+        // Install telescope
+        ProcessRunner::sail()->run('php artisan telescope:install');
     }
 }
