@@ -81,6 +81,8 @@ final class LaravelStarterCommand extends Command
             $this->composerPackages->addPackages(FlysystemAwsS3::class);
         }
 
+        $this->initializeGit();
+
         $this->editEnvironmentFiles();
 
         if (! $this->installSail()) {
@@ -89,26 +91,13 @@ final class LaravelStarterCommand extends Command
 
         $this->installComposerPackages();
 
-        // @todo
-        // Commit after each step (composer package at least)
-        // Run rector, pint at the end
-
-        $this->newLine(2);
         $this->copyFiles();
         $this->modifyConsoleFile();
         $this->modifyComposerFile();
-
-        $this->newLine();
-        $this->components->success('Packages have been installed.');
-
-        $this->newLine(2);
         $this->installFrontendDependencies();
         $this->migrateDatabase();
 
-        $this->newLine(2);
-        $this->components->success('Installation completed! Now start the local server and enjoy!');
-        $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail composer dev</>');
-        $this->newLine();
+        $this->finishInstallation();
 
         return self::SUCCESS;
     }
@@ -197,6 +186,8 @@ final class LaravelStarterCommand extends Command
 
         file_put_contents($envPath, $environment);
         file_put_contents($envExamplePath, $environmentExample);
+
+        $this->commit('Update .env and .env.example files');
     }
 
     private function installSail(): bool
@@ -207,6 +198,8 @@ final class LaravelStarterCommand extends Command
             $this->call('sail:install', [
                 '--with' => implode(',', $this->dockerServices),
             ]);
+
+            $this->commit('Installing Laravel Sail');
         }
 
         $this->newLine();
@@ -249,11 +242,15 @@ final class LaravelStarterCommand extends Command
                 $this->components->info(sprintf('Installing %s', $package->name));
 
                 $package->run();
+
+                $this->commit(sprintf('Installing %s', $package->name));
             });
     }
 
     private function copyFiles(): void
     {
+        $this->newLine();
+
         $this->components->info('Publishing pint.json config file');
         $this->files->copy(__DIR__.'/../../stubs/pint.json.stub', base_path('pint.json'));
 
@@ -282,6 +279,8 @@ final class LaravelStarterCommand extends Command
                 $this->files->copy($path, lang_path("{$this->selectedLocale}.json"));
             }
         }
+
+        $this->commit('Publishing stub files');
     }
 
     private function modifyConsoleFile(): void
@@ -306,6 +305,8 @@ final class LaravelStarterCommand extends Command
         ]), $console);
 
         file_put_contents($path, $console);
+
+        $this->commit('Modify console.php file');
     }
 
     private function modifyComposerFile(): void
@@ -390,6 +391,11 @@ final class LaravelStarterCommand extends Command
 
             return $composer;
         });
+
+        $this->newLine();
+        $this->components->success('Packages have been installed.');
+
+        $this->commit('Modify composer.json file');
     }
 
     private function copyWebLocalFile(): void
@@ -417,6 +423,8 @@ final class LaravelStarterCommand extends Command
         EOT;
 
         file_put_contents($path, $web);
+
+        $this->commit('Publish web-local.php and modify web.php file');
     }
 
     private function copyGithubActions(): void
@@ -435,6 +443,8 @@ final class LaravelStarterCommand extends Command
 
         $this->files->delete(base_path('.github/workflows/tests-mysql.yml'));
         $this->files->delete(base_path('.github/workflows/tests-pgsql.yml'));
+
+        $this->commit('Publishing Github Actions files');
     }
 
     private function installFrontendDependencies(): void
@@ -443,9 +453,12 @@ final class LaravelStarterCommand extends Command
             return;
         }
 
+        $this->newLine();
         $this->components->info('Installing frontend dependencies');
 
         TerminalCommand::sail()->run('npm install');
+
+        $this->commit('Installing frontend dependencies');
     }
 
     private function migrateDatabase(): void
@@ -453,5 +466,59 @@ final class LaravelStarterCommand extends Command
         $this->components->info('Migrate database');
 
         TerminalCommand::sail()->run('php artisan migrate:fresh');
+    }
+
+    private function initializeGit(): void
+    {
+        if (! $this->files->exists(base_path('.git'))) {
+            $this->output->note(TerminalCommand::git()->initialize());
+        }
+
+        $this->commit('Initial commit');
+    }
+
+    private function commit(string $commit, string $semantic = 'feat'): void
+    {
+        $this->newLine();
+        $this->output->note(TerminalCommand::git()->commit($commit, $semantic));
+    }
+
+    private function finishInstallation(): void
+    {
+        if ($hasRector = $this->composer->hasPackage('rector/rector')) {
+            $this->newLine();
+            $this->components->info('Applying Rector rules');
+
+            TerminalCommand::sail()->run('composer refactor');
+        }
+
+        if ($hasPint = $this->composer->hasPackage('laravel/pint')) {
+            $this->newLine();
+            $this->components->info('Applying Pint rules');
+
+            TerminalCommand::sail()->run('composer lint');
+        }
+
+        if ($hasRector || $hasPint) {
+            $message = collect([
+                $hasRector ? 'Rector' : null,
+                $hasPint ? 'Pint' : null,
+            ])->filter()->implode(' and ');
+
+            $this->commit("Applying {$message} rules", 'chore');
+        }
+
+        $this->newLine(2);
+        $this->components->success('Installation completed!');
+        $this->newLine();
+        $this->components->info('Run the dev command to start the development server.');
+        $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail composer dev</>');
+        $this->newLine();
+        $this->components->info('Review and push your code to your repository.');
+        $this->output->writeln('<fg=gray>➜</> <options=bold>git remote add origin git@github.com:your-username/your-project.git</>');
+        $this->output->writeln('<fg=gray>➜</> <options=bold>git branch -M main</>');
+        $this->output->writeln('<fg=gray>➜</> <options=bold>git push -u origin main</>');
+
+        $this->newLine();
     }
 }
