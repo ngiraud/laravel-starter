@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## Update preset and chore - 2025-09-05
+
+### What's new
+
+- Remove final on each class
+- Replace private visibility with protected on properties and methods
+- Update pint.json to reflect my configuration
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.3...v1.0.4
+
 ## Refactoring the package with Claude - 2025-08-20
 
 ### What's Changed
