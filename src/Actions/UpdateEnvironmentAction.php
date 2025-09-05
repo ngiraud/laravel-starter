@@ -118,7 +118,7 @@ class UpdateEnvironmentAction
 
         $content = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $content);
 
-        $projectName = basename(getcwd());
+        $projectName = basename((string) getcwd());
 
         $content = str_replace('AWS_USE_PATH_STYLE_ENDPOINT=false', implode("\n", [
             'AWS_USE_PATH_STYLE_ENDPOINT=true',
