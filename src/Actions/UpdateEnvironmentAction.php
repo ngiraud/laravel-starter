@@ -118,10 +118,12 @@ class UpdateEnvironmentAction
 
         $content = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $content);
 
+        $projectName = basename(getcwd());
+
         $content = str_replace('AWS_USE_PATH_STYLE_ENDPOINT=false', implode("\n", [
             'AWS_USE_PATH_STYLE_ENDPOINT=true',
             'AWS_ENDPOINT=http://localhost:9000',
-            "AWS_URL=http://minio.{$this->preferences['appName']}.orb.local:9000/public",
+            "AWS_URL=http://minio.{$projectName}.orb.local:9000/public",
         ]), $content);
 
         $content = preg_replace('/AWS_ACCESS_KEY_ID=.*/', 'AWS_ACCESS_KEY_ID=sail', $content) ?? $content;
