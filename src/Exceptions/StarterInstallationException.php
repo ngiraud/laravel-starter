@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Exceptions;
 
 use Exception;
 
-final class StarterInstallationException extends Exception
+class StarterInstallationException extends Exception
 {
     /**
      * Create exception for missing Laravel Sail dependency

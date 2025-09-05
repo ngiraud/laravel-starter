@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-final class Larastan extends ComposerPackage
+class Larastan extends ComposerPackage
 {
     public string $name = 'Larastan';
 

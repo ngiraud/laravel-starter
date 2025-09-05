@@ -8,7 +8,7 @@ use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputOption;
 
-final class MakeActionCommand extends GeneratorCommand
+class MakeActionCommand extends GeneratorCommand
 {
     /**
      * The name and signature of the console command.
@@ -88,7 +88,7 @@ final class MakeActionCommand extends GeneratorCommand
     /**
      * Resolve the fully qualified path to the stub.
      */
-    private function resolveStubPath(string $stub): string
+    protected function resolveStubPath(string $stub): string
     {
         $basePath = $this->laravel->basePath(mb_trim($stub, '/'));
 

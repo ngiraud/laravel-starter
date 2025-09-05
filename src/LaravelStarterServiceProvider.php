@@ -9,7 +9,7 @@ use BerryValley\LaravelStarter\Commands\MakeActionCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-final class LaravelStarterServiceProvider extends PackageServiceProvider
+class LaravelStarterServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-final class FlysystemAwsS3 extends ComposerPackage
+class FlysystemAwsS3 extends ComposerPackage
 {
     public string $name = 'Flysystem AWS S3';
 

@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Packages;
 
 use BerryValley\LaravelStarter\Facades\ProcessRunner;
 
-final class Filament extends ComposerPackage
+class Filament extends ComposerPackage
 {
     public string $name = 'Filament';
 

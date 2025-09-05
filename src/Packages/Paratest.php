@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-final class Paratest extends ComposerPackage
+class Paratest extends ComposerPackage
 {
     public string $name = 'Paratest';
 

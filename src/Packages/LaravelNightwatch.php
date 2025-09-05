@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Packages;
 
 use Exception;
 
-final class LaravelNightwatch extends ComposerPackage
+class LaravelNightwatch extends ComposerPackage
 {
     public string $name = 'Laravel NightWatch';
 

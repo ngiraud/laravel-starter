@@ -7,12 +7,12 @@ namespace BerryValley\LaravelStarter\Actions;
 use BerryValley\LaravelStarter\Exceptions\EnvironmentFileException;
 use Illuminate\Support\Str;
 
-final class UpdateEnvironmentAction
+class UpdateEnvironmentAction
 {
     /**
      * @var array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
      */
-    private array $preferences;
+    protected array $preferences;
 
     /**
      * Update environment file with user preferences and Docker service configurations
@@ -40,7 +40,7 @@ final class UpdateEnvironmentAction
     /**
      * Read environment file content and validate it exists
      */
-    private function readEnvironmentFile(string $path): string
+    protected function readEnvironmentFile(string $path): string
     {
         $content = file_get_contents($path);
 
@@ -54,7 +54,7 @@ final class UpdateEnvironmentAction
     /**
      * Write content to environment file and validate success
      */
-    private function writeEnvironmentFile(string $path, string $content): void
+    protected function writeEnvironmentFile(string $path, string $content): void
     {
         if (file_put_contents($path, $content) === false) {
             throw new EnvironmentFileException("Unable to write {$path} file");
@@ -66,7 +66,7 @@ final class UpdateEnvironmentAction
      *
      * Updates app name, locale, faker locale, session driver, and mail settings.
      */
-    private function applyBaseConfiguration(string $content): string
+    protected function applyBaseConfiguration(string $content): string
     {
         $fakerLocale = sprintf('%s_%s', $this->preferences['locale'], Str::upper($this->preferences['locale']));
 
@@ -89,7 +89,7 @@ final class UpdateEnvironmentAction
      *
      * Updates session driver, queue connection, and cache store to use Redis.
      */
-    private function configureRedis(string $content): string
+    protected function configureRedis(string $content): string
     {
         if (! in_array('redis', $this->preferences['dockerServices'])) {
             return $content;
@@ -110,7 +110,7 @@ final class UpdateEnvironmentAction
      * Updates filesystem disk to S3, sets AWS credentials for local development,
      * and configures S3 endpoints for Minio.
      */
-    private function configureMinio(string $content): string
+    protected function configureMinio(string $content): string
     {
         if (! in_array('minio', $this->preferences['dockerServices'])) {
             return $content;

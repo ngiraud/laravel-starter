@@ -8,13 +8,13 @@ use Closure;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
 
-final class ProcessRunner
+class ProcessRunner
 {
-    private const string CONTEXT_SAIL = 'sail';
+    protected const string CONTEXT_SAIL = 'sail';
 
-    private const string CONTEXT_LOCAL = 'local';
+    protected const string CONTEXT_LOCAL = 'local';
 
-    private string $context = self::CONTEXT_LOCAL;
+    protected string $context = self::CONTEXT_LOCAL;
 
     /**
      * Switch to Sail context for running commands inside Docker containers
@@ -88,7 +88,7 @@ final class ProcessRunner
     /**
      * Get the output callback for TTY processes
      */
-    private function getOutputCallback(): Closure
+    protected function getOutputCallback(): Closure
     {
         return function (string $type, string $output): void {
             echo $output;
@@ -98,7 +98,7 @@ final class ProcessRunner
     /**
      * Check if there are changes to commit
      */
-    private function hasChangesToCommit(): bool
+    protected function hasChangesToCommit(): bool
     {
         $statusResult = $this->runSilently('git status --porcelain');
 
@@ -108,7 +108,7 @@ final class ProcessRunner
     /**
      * Build the command based on the current context
      */
-    private function buildCommand(string $command): string
+    protected function buildCommand(string $command): string
     {
         return match ($this->context) {
             self::CONTEXT_SAIL => "./vendor/bin/sail {$command}",
@@ -119,7 +119,7 @@ final class ProcessRunner
     /**
      * Format Git commit output to show commit hash and summary
      */
-    private function formatCommitOutput(string $output): string
+    protected function formatCommitOutput(string $output): string
     {
         $lines = explode("\n", $output);
 

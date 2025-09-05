@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Packages;
 
-final class Rector extends ComposerPackage
+class Rector extends ComposerPackage
 {
     public string $name = 'Rector';
 

@@ -8,7 +8,7 @@ use BerryValley\LaravelStarter\Packages\ComposerPackage;
 use Illuminate\Support\Collection;
 
 /** @extends Collection<array-key, ComposerPackage> */
-final class PackagesCollection extends Collection
+class PackagesCollection extends Collection
 {
     /**
      * @param  array<int, string>  $items

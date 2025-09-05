@@ -46,7 +46,7 @@ abstract class ComposerPackage
      *
      * Requires the package via Composer then runs package-specific installation.
      */
-    final public function run(): void
+    public function run(): void
     {
         if ($this->composer->hasPackage($this->require)) {
             return;

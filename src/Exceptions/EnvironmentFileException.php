@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Exceptions;
 
 use Exception;
 
-final class EnvironmentFileException extends Exception
+class EnvironmentFileException extends Exception
 {
     /**
      * Create exception for file read failure

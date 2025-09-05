@@ -7,7 +7,7 @@ namespace BerryValley\LaravelStarter\Packages;
 use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Exception;
 
-final class LaravelBackup extends ComposerPackage
+class LaravelBackup extends ComposerPackage
 {
     public string $name = 'Laravel Spatie Backups';
 
@@ -34,7 +34,7 @@ final class LaravelBackup extends ComposerPackage
     /**
      * Modify backup configuration file with custom settings
      */
-    private function modifyConfigFile(): void
+    protected function modifyConfigFile(): void
     {
         $path = base_path('config/backup.php');
 
@@ -72,7 +72,7 @@ final class LaravelBackup extends ComposerPackage
     /**
      * Add backup commands to console schedule
      */
-    private function modifyConsoleFile(): void
+    protected function modifyConsoleFile(): void
     {
         $path = base_path('routes/console.php');
 

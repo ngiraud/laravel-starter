@@ -7,9 +7,9 @@ namespace BerryValley\LaravelStarter\Actions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Composer;
 
-final readonly class UpdateComposerScriptsAction
+readonly class UpdateComposerScriptsAction
 {
-    private Composer $composer;
+    protected Composer $composer;
 
     public function __construct(
     ) {
@@ -35,7 +35,7 @@ final readonly class UpdateComposerScriptsAction
     /**
      * @return Collection<int, array{color: string, command: string, name: string}>
      */
-    private function buildCommands(): Collection
+    protected function buildCommands(): Collection
     {
         return collect([
             ['color' => '#93c5fd', 'command' => 'php artisan pail --timeout=0', 'name' => 'logs'],
@@ -50,7 +50,7 @@ final readonly class UpdateComposerScriptsAction
      *
      * Returns Horizon command if available, otherwise falls back to basic queue listener.
      */
-    private function getQueueCommand(): string
+    protected function getQueueCommand(): string
     {
         return match ($this->composer->hasPackage('laravel/horizon')) {
             true => 'php artisan horizon',
@@ -62,7 +62,7 @@ final readonly class UpdateComposerScriptsAction
      * @param  Collection<int, array{color: string, command: string, name: string}>  $commands
      * @return array<string, array<int, string>>
      */
-    private function buildScripts(Collection $commands): array
+    protected function buildScripts(Collection $commands): array
     {
         $devCommands = $commands->where('name', '!=', 'ssr');
         $ssrCommands = $commands->where('name', '!=', 'vite');
@@ -107,7 +107,7 @@ final readonly class UpdateComposerScriptsAction
     /**
      * @param  Collection<int, array{color: string, command: string, name: string}>  $commands
      */
-    private function buildConcurrentlyCommand(Collection $commands): string
+    protected function buildConcurrentlyCommand(Collection $commands): string
     {
         return sprintf(
             'npx concurrently -c "%s" %s --names=%s --kill-others',

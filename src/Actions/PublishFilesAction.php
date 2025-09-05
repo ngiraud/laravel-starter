@@ -8,12 +8,12 @@ use BerryValley\LaravelStarter\Exceptions\StarterInstallationException;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
 
-final readonly class PublishFilesAction
+readonly class PublishFilesAction
 {
-    private const string STUB_PATH = __DIR__.'/../../stubs';
+    protected const string STUB_PATH = __DIR__.'/../../stubs';
 
     public function __construct(
-        private Filesystem $files
+        protected Filesystem $files
     ) {}
 
     /**
@@ -99,7 +99,7 @@ final readonly class PublishFilesAction
         return true;
     }
 
-    private function publishFile(string $stub, string $destination): void
+    protected function publishFile(string $stub, string $destination): void
     {
         $sourcePath = self::STUB_PATH.'/'.$stub;
 
@@ -114,7 +114,7 @@ final readonly class PublishFilesAction
         }
     }
 
-    private function updateWebRoutes(): bool
+    protected function updateWebRoutes(): bool
     {
         $path = base_path('routes/web.php');
         $web = file_get_contents($path);
@@ -144,7 +144,7 @@ final readonly class PublishFilesAction
     /**
      * @param  array<int, string>  $dockerServices
      */
-    private function configureGithubWorkflows(array $dockerServices): void
+    protected function configureGithubWorkflows(array $dockerServices): void
     {
         if (in_array('mysql', $dockerServices)) {
             $this->files->copy(

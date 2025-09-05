@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Packages;
 
 use BerryValley\LaravelStarter\Facades\ProcessRunner;
 
-final class LaravelHorizon extends ComposerPackage
+class LaravelHorizon extends ComposerPackage
 {
     public string $name = 'Laravel Horizon';
 
@@ -30,7 +30,7 @@ final class LaravelHorizon extends ComposerPackage
     /**
      * Add Horizon snapshot command to console schedule
      */
-    private function modifyConsoleFile(): void
+    protected function modifyConsoleFile(): void
     {
         $path = base_path('routes/console.php');
 

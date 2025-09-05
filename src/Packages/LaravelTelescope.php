@@ -7,7 +7,7 @@ namespace BerryValley\LaravelStarter\Packages;
 use BerryValley\LaravelStarter\Facades\ProcessRunner;
 use Illuminate\Support\Str;
 
-final class LaravelTelescope extends ComposerPackage
+class LaravelTelescope extends ComposerPackage
 {
     public string $name = 'Laravel Telescope';
 

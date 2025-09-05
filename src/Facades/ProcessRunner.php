@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Facade;
  *
  * @see \BerryValley\LaravelStarter\Support\ProcessRunner
  */
-final class ProcessRunner extends Facade
+class ProcessRunner extends Facade
 {
     protected static function getFacadeAccessor(): string
     {

@@ -27,7 +27,7 @@ use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
 
 #[AsCommand(name: 'starter:install')]
-final class LaravelStarterCommand extends Command
+class LaravelStarterCommand extends Command
 {
     use InteractsWithDockerComposeServices;
 
@@ -35,27 +35,27 @@ final class LaravelStarterCommand extends Command
 
     public $description = 'Prepare everything after a fresh Laravel installation';
 
-    private UpdateEnvironmentAction $updateEnvironmentAction;
+    protected UpdateEnvironmentAction $updateEnvironmentAction;
 
-    private PublishFilesAction $publishFilesAction;
+    protected PublishFilesAction $publishFilesAction;
 
-    private UpdateComposerScriptsAction $updateComposerScriptsAction;
-
-    /**
-     * @var array<int, string>
-     */
-    private array $dockerServices;
+    protected UpdateComposerScriptsAction $updateComposerScriptsAction;
 
     /**
      * @var array<int, string>
      */
-    private array $defaultDockerServices = ['mysql', 'redis', 'minio'];
+    protected array $dockerServices;
 
-    private Composer $composer;
+    /**
+     * @var array<int, string>
+     */
+    protected array $defaultDockerServices = ['mysql', 'redis', 'minio'];
 
-    private Filesystem $files;
+    protected Composer $composer;
 
-    private string $selectedLocale = 'fr';
+    protected Filesystem $files;
+
+    protected string $selectedLocale = 'fr';
 
     /**
      * Execute the console command to install Laravel starter kit
@@ -120,7 +120,7 @@ final class LaravelStarterCommand extends Command
      *
      * @return array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
      */
-    private function collectUserPreferences(): array
+    protected function collectUserPreferences(): array
     {
         /** @var array<int, string> $options */
         $options = [
@@ -182,7 +182,7 @@ final class LaravelStarterCommand extends Command
     /**
      * Initialize Git repository if it doesn't exist and create initial commit
      */
-    private function initializeGit(): void
+    protected function initializeGit(): void
     {
         if (! $this->files->exists(base_path('.git'))) {
             $this->components->info(ProcessRunner::git()->initialize());
@@ -199,7 +199,7 @@ final class LaravelStarterCommand extends Command
      *
      * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
      */
-    private function updateEnvironmentFiles(array $preferences): void
+    protected function updateEnvironmentFiles(array $preferences): void
     {
         $this->components->info('Updating environment files');
 
@@ -217,7 +217,7 @@ final class LaravelStarterCommand extends Command
      *
      * @param  array<int, string>  $dockerServices
      */
-    private function installSail(array $dockerServices): bool
+    protected function installSail(array $dockerServices): bool
     {
         $this->components->info('Installing Sail');
 
@@ -244,7 +244,7 @@ final class LaravelStarterCommand extends Command
      *
      * @param  array<int, string>  $selectedPackages
      */
-    private function installComposerPackages(array $selectedPackages): void
+    protected function installComposerPackages(array $selectedPackages): void
     {
         /** @var array<int, string> $packages */
         $packages = config()->array('starter.packages', []);
@@ -280,7 +280,7 @@ final class LaravelStarterCommand extends Command
      * User model, TestCase, GitHub Actions workflows, language files, and updates
      * console.php and composer.json with development scripts.
      */
-    private function publishFiles(): void
+    protected function publishFiles(): void
     {
         $this->newLine();
 
@@ -317,7 +317,7 @@ final class LaravelStarterCommand extends Command
      *
      * Skips installation if node_modules already exists.
      */
-    private function installFrontendDependencies(): void
+    protected function installFrontendDependencies(): void
     {
         if ($this->files->exists(base_path('node_modules'))) {
             return;
@@ -332,7 +332,7 @@ final class LaravelStarterCommand extends Command
     /**
      * Run database migrations to set up the database schema
      */
-    private function migrateDatabase(): void
+    protected function migrateDatabase(): void
     {
         $this->components->info('Migrating database');
         ProcessRunner::sail()->run('php artisan migrate:fresh');
@@ -344,7 +344,7 @@ final class LaravelStarterCommand extends Command
      * Runs Rector for code refactoring and Pint for code formatting
      * if these packages are installed, then commits the changes.
      */
-    private function applyFinalOptimizations(): void
+    protected function applyFinalOptimizations(): void
     {
         $hasRector = $this->composer->hasPackage('rector/rector');
         $hasPint = $this->composer->hasPackage('laravel/pint');
@@ -377,7 +377,7 @@ final class LaravelStarterCommand extends Command
      * @param  string  $message  The commit message
      * @param  string  $semantic  The semantic prefix (feat, fix, chore, etc.)
      */
-    private function commit(string $message, string $semantic = 'feat'): void
+    protected function commit(string $message, string $semantic = 'feat'): void
     {
         $this->newLine();
         $this->output->note(ProcessRunner::git()->commit($message, $semantic));
@@ -389,7 +389,7 @@ final class LaravelStarterCommand extends Command
      * Shows success message and provides commands for starting development
      * server and setting up Git repository.
      */
-    private function displayCompletionMessage(): void
+    protected function displayCompletionMessage(): void
     {
         $this->newLine(2);
         $this->components->success('Installation completed!');
