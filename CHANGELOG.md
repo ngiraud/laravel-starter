@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## Fix PHPStan error - 2025-09-05
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.5...v1.0.6
+
 ## Fix on AWS_URL for Minio - 2025-09-05
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.4...v1.0.5
