@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## Fix on AWS_URL for Minio - 2025-09-05
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.4...v1.0.5
+
 ## Update preset and chore - 2025-09-05
 
 ### What's new
