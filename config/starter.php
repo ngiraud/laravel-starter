@@ -18,6 +18,7 @@ return [
         Packages\LaravelBackup::class,
         Packages\Filament::class,
         Packages\LaravelNightwatch::class,
+        Packages\Boost::class,
     ],
 
 ];
