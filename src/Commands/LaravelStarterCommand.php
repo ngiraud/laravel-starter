@@ -49,7 +49,7 @@ class LaravelStarterCommand extends Command
     /**
      * @var array<int, string>
      */
-    protected array $defaultDockerServices = ['mysql', 'redis', 'minio'];
+    protected array $defaultDockerServices = ['pgsql', 'redis', 'rustfs'];
 
     protected Composer $composer;
 
