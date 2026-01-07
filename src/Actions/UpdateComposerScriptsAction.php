@@ -25,8 +25,9 @@ readonly class UpdateComposerScriptsAction
     public function handle(): void
     {
         $this->composer->modify(function (array $composer) {
-            $commands = $this->buildCommands();
-            $composer['scripts'] = $this->buildScripts($commands);
+            $excludingKeys = array_flip(['dev', 'dev:ssr', 'test']);
+
+            $composer['scripts'] = array_diff_key($composer['scripts'], $excludingKeys) + $this->buildScripts();
 
             return $composer;
         });
@@ -59,11 +60,12 @@ readonly class UpdateComposerScriptsAction
     }
 
     /**
-     * @param  Collection<int, array{color: string, command: string, name: string}>  $commands
      * @return array<string, array<int, string>>
      */
-    protected function buildScripts(Collection $commands): array
+    protected function buildScripts(): array
     {
+        $commands = $this->buildCommands();
+
         $devCommands = $commands->where('name', '!=', 'ssr');
         $ssrCommands = $commands->where('name', '!=', 'vite');
 
