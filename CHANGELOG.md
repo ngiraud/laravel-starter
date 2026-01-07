@@ -2,6 +2,20 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.0.7 - 2026-01-07
+
+### What's Changed
+
+* chore(deps): bump actions/checkout from 4 to 6 by @dependabot[bot] in https://github.com/ngiraud/laravel-starter/pull/5
+* chore(deps): bump stefanzweifel/git-auto-commit-action from 6 to 7 by @dependabot[bot] in https://github.com/ngiraud/laravel-starter/pull/4
+* Add 2FA on User model
+* Update Rector package, using the custom for Laravel
+* Composer scripts are now correctly updated, keeping "setup" and "pre/post" scripts
+* Change Docker service preferences, using now PGSql, RustFS and Redis
+* Add Laravel Boost as new possible package, enabled by default
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.6...v1.0.7
+
 ## Fix PHPStan error - 2025-09-05
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.5...v1.0.6
