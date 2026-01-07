@@ -92,7 +92,7 @@ readonly class UpdateComposerScriptsAction
             ],
         ];
 
-        if ($this->composer->hasPackage('rector/rector')) {
+        if ($this->composer->hasPackage('driftingly/rector-laravel')) {
             $scripts['refactor'] = ['rector'];
             $scripts['test:refactor'] = ['rector --dry-run'];
         }
