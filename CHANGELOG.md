@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.0.8 - 2026-01-08
+
+### What's Changed
+
+* Fix PHPStan error
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.7...v1.0.8
+
 ## v1.0.7 - 2026-01-07
 
 ### What's Changed
