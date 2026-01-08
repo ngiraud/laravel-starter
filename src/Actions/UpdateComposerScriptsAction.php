@@ -27,7 +27,10 @@ readonly class UpdateComposerScriptsAction
         $this->composer->modify(function (array $composer) {
             $excludingKeys = array_flip(['dev', 'dev:ssr', 'test']);
 
-            $composer['scripts'] = array_diff_key($composer['scripts'], $excludingKeys) + $this->buildScripts();
+            /** @var array<string, string|array<int, string>> $scripts */
+            $scripts = $composer['scripts'] ?? [];
+
+            $composer['scripts'] = array_diff_key($scripts, $excludingKeys) + $this->buildScripts();
 
             return $composer;
         });
