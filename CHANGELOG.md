@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.0.9 - 2026-01-20
+
+** What's changed **
+
+- Update AppServiceProvider
+- Bump FIlament version from 4 to 5
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.8...v1.0.9
+
 ## v1.0.8 - 2026-01-08
 
 ### What's Changed
