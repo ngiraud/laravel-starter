@@ -298,11 +298,6 @@ class LaravelStarterCommand extends Command
         $this->components->info('Publishing Github Actions');
         $this->publishFilesAction->publishGithubActions($this->dockerServices);
 
-        if (Arr::has($this->selectedPackages, 'laravel/boost')) {
-            $this->components->info('Publishing Boost Guidelines');
-            $this->publishFilesAction->publishBoostGuidelines();
-        }
-
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");
             $this->publishFilesAction->publishLanguageFiles($this->selectedLocale);
