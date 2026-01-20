@@ -12,7 +12,7 @@ class Filament extends ComposerPackage
 
     public string $require = 'filament/filament';
 
-    public string $version = '^4.0';
+    public string $version = '^5.0';
 
     public bool $isDevRequirement = false;
 
