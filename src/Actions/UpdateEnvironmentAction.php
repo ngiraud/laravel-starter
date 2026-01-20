@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 class UpdateEnvironmentAction
 {
     /**
-     * @var array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
+     * @var array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}
      */
     protected array $preferences;
 
@@ -21,7 +21,7 @@ class UpdateEnvironmentAction
      * Redis and Minio services based on selected Docker services.
      *
      * @param  string  $path  Path to the environment file (.env or .env.example)
-     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
+     * @param  array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}  $preferences
      */
     public function handle(string $path, array $preferences): void
     {

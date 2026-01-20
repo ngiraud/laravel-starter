@@ -24,7 +24,7 @@ readonly class UpdateComposerScriptsAction
      */
     public function handle(): void
     {
-        $this->composer->modify(function (array $composer) {
+        $this->composer->modify(function (array $composer): array {
             $excludingKeys = array_flip(['dev', 'dev:ssr', 'test']);
 
             /** @var array<string, string|array<int, string>> $scripts */
@@ -119,7 +119,7 @@ readonly class UpdateComposerScriptsAction
             $commands->pluck('color')->implode(','),
             $commands->map(fn (array $command): string =>
                 /** @var array{color: string, command: string, name: string} $command */
-                "\"{$command['command']}\"")->implode(' '),
+                sprintf('"%s"', $command['command']))->implode(' '),
             $commands->pluck('name')->implode(',')
         );
     }
