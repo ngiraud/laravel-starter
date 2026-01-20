@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.0.12 - 2026-01-20
+
+** What's changed**
+
+- Trying to fix how Boost guidelines are copied
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.11...v1.0.12
+
 ## v1.0.11 - 2026-01-20
 
 ** What's changed**
