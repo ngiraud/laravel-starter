@@ -99,6 +99,11 @@ readonly class PublishFilesAction
         return true;
     }
 
+    public function publishBoostGuidelines(): void
+    {
+        $this->files->copyDirectory(self::STUB_PATH.'/.ai/guidelines', base_path('.ai/guidelines'));
+    }
+
     protected function publishFile(string $stub, string $destination): void
     {
         $sourcePath = self::STUB_PATH.'/'.$stub;

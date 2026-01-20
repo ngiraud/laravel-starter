@@ -37,7 +37,7 @@ class PackagesCollection extends Collection
     }
 
     /**
-     * @param  array<int, string>  $composerRequires
+     * @param  array<string, string>  $composerRequires
      */
     public function shouldInstall(array $composerRequires): self
     {

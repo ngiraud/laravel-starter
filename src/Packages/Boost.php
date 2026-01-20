@@ -18,8 +18,6 @@ class Boost extends ComposerPackage
 
     public function install(): void
     {
-        ProcessRunner::sail()->run('cp -R stubs/.ai/guidelines .ai/guidelines');
-
         ProcessRunner::sail()->run('php artisan boost:install');
     }
 }

@@ -47,6 +47,11 @@ class LaravelStarterCommand extends Command
     protected array $dockerServices;
 
     /**
+     * @var array<string, string>
+     */
+    protected array $selectedPackages;
+
+    /**
      * @var array<int, string>
      */
     protected array $defaultDockerServices = ['pgsql', 'redis', 'rustfs'];
@@ -85,16 +90,18 @@ class LaravelStarterCommand extends Command
 
             $preferences = $this->collectUserPreferences();
             $this->dockerServices = $preferences['dockerServices'];
+            $this->selectedPackages = $preferences['selectedPackages'];
+
             $this->selectedLocale = $preferences['locale'];
 
             $this->initializeGit();
             $this->updateEnvironmentFiles($preferences);
 
-            if (! $this->installSail($preferences['dockerServices'])) {
+            if (! $this->installSail($this->dockerServices)) {
                 return self::FAILURE;
             }
 
-            $this->installComposerPackages($preferences['selectedPackages']);
+            $this->installComposerPackages();
             $this->publishFiles();
             $this->installFrontendDependencies();
             $this->migrateDatabase();
@@ -118,7 +125,7 @@ class LaravelStarterCommand extends Command
      * - Application name and locale
      * - Composer packages to install
      *
-     * @return array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}
+     * @return array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}
      */
     protected function collectUserPreferences(): array
     {
@@ -162,7 +169,7 @@ class LaravelStarterCommand extends Command
         /** @var array<int, string> $defaultPackages */
         $defaultPackages = $composerPackages->installedByDefault()->pluck('require');
 
-        /** @var array<int, string> $selectedPackages */
+        /** @var array<string, string> $selectedPackages */
         $selectedPackages = multiselect(
             label: 'Which composer dependencies would you like to install?',
             options: $packageOptions,
@@ -197,7 +204,7 @@ class LaravelStarterCommand extends Command
      * Configures application settings, database, Redis, Minio, and other services
      * based on the selected Docker services and user preferences.
      *
-     * @param  array{dockerServices: array<int, string>, selectedPackages: array<int, string>, appName: string, locale: string, database: string}  $preferences
+     * @param  array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}  $preferences
      */
     protected function updateEnvironmentFiles(array $preferences): void
     {
@@ -241,10 +248,8 @@ class LaravelStarterCommand extends Command
      * Installs the packages selected by the user, including any additional
      * packages required by the selected Docker services (like AWS S3 for Minio).
      * Each package installation is committed separately.
-     *
-     * @param  array<int, string>  $selectedPackages
      */
-    protected function installComposerPackages(array $selectedPackages): void
+    protected function installComposerPackages(): void
     {
         /** @var array<int, string> $packages */
         $packages = config()->array('starter.packages', []);
@@ -254,7 +259,7 @@ class LaravelStarterCommand extends Command
             $composerPackages->addPackages(FlysystemAwsS3::class);
         }
 
-        $composerPackages->shouldInstall($selectedPackages)->each(function (ComposerPackage $package): void {
+        $composerPackages->shouldInstall($this->selectedPackages)->each(function (ComposerPackage $package): void {
             if ($this->composer->hasPackage($package->require)) {
                 $this->components->warn("{$package->name} is already installed. Skipping.");
 
@@ -292,6 +297,11 @@ class LaravelStarterCommand extends Command
 
         $this->components->info('Publishing Github Actions');
         $this->publishFilesAction->publishGithubActions($this->dockerServices);
+
+        if (Arr::has($this->selectedPackages, 'laravel/boost')) {
+            $this->components->info('Publishing Boost Guidelines');
+            $this->publishFilesAction->publishBoostGuidelines();
+        }
 
         if ($this->selectedLocale !== 'en') {
             $this->components->info("Publishing language files for: {$this->selectedLocale}");
