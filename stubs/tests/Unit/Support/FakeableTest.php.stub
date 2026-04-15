@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+use Mockery\MockInterface;
+use Tests\Fixtures\FakeAction;
+
+pest()->group('support');
+
+describe('Fakeable', function () {
+    it('isFake returns false when not faked', function () {
+        FakeAction::clearResolvedInstance();
+
+        expect(FakeAction::isFake())->toBeFalse();
+    });
+
+    it('isFake returns true after fake is applied', function () {
+        FakeAction::fake();
+
+        expect(FakeAction::isFake())->toBeTrue();
+    });
+
+    it('clearResolvedInstance removes the fake from the container', function () {
+        FakeAction::fake();
+        expect(FakeAction::isFake())->toBeTrue();
+
+        FakeAction::clearResolvedInstance();
+
+        expect(FakeAction::isFake())->toBeFalse();
+    });
+
+    it('swap replaces the container binding and returns the instance', function () {
+        $mock = Mockery::mock(FakeAction::class);
+
+        $returned = FakeAction::swap($mock);
+
+        expect($returned)->toBe($mock)
+            ->and(app(FakeAction::class))->toBe($mock);
+    });
+
+    it('fakePartial returns a partial mock', function () {
+        $mock = FakeAction::fakePartial();
+
+        expect($mock)->toBeInstanceOf(MockInterface::class)
+            ->and(FakeAction::isFake())->toBeTrue();
+    });
+});

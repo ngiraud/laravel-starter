@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Actions;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Composer;
 
 class PublishFilesAction
 {
@@ -18,6 +19,21 @@ class PublishFilesAction
         $this->copy('AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
         $this->copy('User.php.stub', app_path('Models/User.php'));
         $this->copy('TestCase.php.stub', base_path('tests/TestCase.php'));
+
+        $this->files->ensureDirectoryExists(app_path('Actions'));
+        $this->copy('Actions/Action.php.stub', app_path('Actions/Action.php'));
+
+        $this->files->ensureDirectoryExists(app_path('Support'));
+        $this->copy('Support/Fakeable.php.stub', app_path('Support/Fakeable.php'));
+
+        $this->files->ensureDirectoryExists(app_path('Enums/Concerns'));
+        $this->copy('Enums/Concerns/EnhanceEnum.php.stub', app_path('Enums/Concerns/EnhanceEnum.php'));
+
+        $this->files->ensureDirectoryExists(base_path('tests/Fixtures'));
+        $this->copy('tests/Fixtures/FakeAction.php.stub', base_path('tests/Fixtures/FakeAction.php'));
+
+        $this->files->ensureDirectoryExists(base_path('tests/Unit/Support'));
+        $this->copy('tests/Unit/Support/FakeableTest.php.stub', base_path('tests/Unit/Support/FakeableTest.php'));
     }
 
     public function publishWebLocalFile(): void
@@ -55,7 +71,7 @@ class PublishFilesAction
      */
     public function publishGithubActions(array $dockerServices): void
     {
-        /** @var \Illuminate\Support\Composer $composer */
+        /** @var Composer $composer */
         $composer = app('composer');
 
         $this->files->deleteDirectory(base_path('.github'));

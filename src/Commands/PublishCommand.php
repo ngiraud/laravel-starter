@@ -6,6 +6,7 @@ namespace BerryValley\LaravelStarter\Commands;
 
 use BerryValley\LaravelStarter\Actions\PublishFilesAction;
 use BerryValley\LaravelStarter\Actions\UpdateComposerScriptsAction;
+use BerryValley\LaravelStarter\Actions\UpdatePackageJsonAction;
 use BerryValley\LaravelStarter\Support\Git;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,7 +20,7 @@ class PublishCommand extends Command
 
     public $description = 'Publish configuration stubs and update project structure';
 
-    public function handle(PublishFilesAction $publishFiles, UpdateComposerScriptsAction $updateScripts, Git $git): int
+    public function handle(PublishFilesAction $publishFiles, UpdateComposerScriptsAction $updateScripts, UpdatePackageJsonAction $updatePackageJson, Git $git): int
     {
         $locale = (string) env('APP_LOCALE', 'en');
 
@@ -33,6 +34,7 @@ class PublishCommand extends Command
 
         $this->components->info('Updating composer.json scripts');
         $updateScripts->handle();
+        $updatePackageJson->handle();
 
         if (confirm('Publish AI guidelines? (.ai/guidelines)', default: true)) {
             $publishFiles->publishAiGuidelines();

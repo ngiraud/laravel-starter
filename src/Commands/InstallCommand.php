@@ -7,6 +7,7 @@ namespace BerryValley\LaravelStarter\Commands;
 use BerryValley\LaravelStarter\Actions\PublishFilesAction;
 use BerryValley\LaravelStarter\Actions\UpdateComposerScriptsAction;
 use BerryValley\LaravelStarter\Actions\UpdateEnvironmentAction;
+use BerryValley\LaravelStarter\Actions\UpdatePackageJsonAction;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
@@ -42,6 +43,7 @@ class InstallCommand extends Command
         UpdateEnvironmentAction $updateEnv,
         PublishFilesAction $publishFiles,
         UpdateComposerScriptsAction $updateScripts,
+        UpdatePackageJsonAction $updatePackageJson,
     ): int {
         /** @var Composer $composer */
         $composer = app('composer');
@@ -160,6 +162,7 @@ class InstallCommand extends Command
         $publishFiles->publishLanguageFiles($locale);
         $publishFiles->updateConsoleFile();
         $updateScripts->handle();
+        $updatePackageJson->handle();
 
         if (confirm('Publish AI guidelines? (.ai/guidelines)', default: true)) {
             $publishFiles->publishAiGuidelines();
