@@ -19,7 +19,7 @@ readonly class UpdateComposerScriptsAction
     public function handle(): void
     {
         $this->composer->modify(function (array $composer): array {
-            $keep = array_flip(['dev', 'dev:ssr', 'test', 'test:lint', 'test:types', 'test:all', 'lint']);
+            $keep = array_flip(['dev', 'test', 'test:lint', 'test:types', 'test:all', 'lint']);
 
             /** @var array<string, string|array<int, string>> $scripts */
             $scripts = $composer['scripts'] ?? [];
@@ -38,7 +38,6 @@ readonly class UpdateComposerScriptsAction
         return collect([
             ['color' => '#93c5fd', 'command' => 'php artisan pail --timeout=0', 'name' => 'logs'],
             ['color' => '#fdba74', 'command' => 'npm run dev', 'name' => 'vite'],
-            ['color' => '#fdba74', 'command' => 'php artisan inertia:start-ssr', 'name' => 'ssr'],
             ['color' => '#93c5fd', 'command' => $this->getQueueCommand(), 'name' => 'queue'],
         ]);
     }
@@ -55,9 +54,7 @@ readonly class UpdateComposerScriptsAction
      */
     protected function buildScripts(): array
     {
-        $commands = $this->buildCommands();
-        $devCommands = $commands->where('name', '!=', 'ssr');
-        $ssrCommands = $commands->where('name', '!=', 'vite');
+        $devCommands = $this->buildCommands();
         $hasRector = $this->composer->hasPackage('driftingly/rector-laravel');
         $hasLarastan = $this->composer->hasPackage('larastan/larastan');
         $hasParatest = $this->composer->hasPackage('brianium/paratest');
@@ -85,11 +82,6 @@ readonly class UpdateComposerScriptsAction
             'dev' => [
                 'Composer\\Config::disableProcessTimeout',
                 $this->buildConcurrentlyCommand($devCommands),
-            ],
-            'dev:ssr' => [
-                'npm run build:ssr',
-                'Composer\\Config::disableProcessTimeout',
-                $this->buildConcurrentlyCommand($ssrCommands),
             ],
             'lint' => $lint->values()->all(),
             'test:lint' => $testLint->values()->all(),
