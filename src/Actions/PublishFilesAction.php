@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Actions;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Composer;
 
 class PublishFilesAction
 {
@@ -55,7 +56,7 @@ class PublishFilesAction
      */
     public function publishGithubActions(array $dockerServices): void
     {
-        /** @var \Illuminate\Support\Composer $composer */
+        /** @var Composer $composer */
         $composer = app('composer');
 
         $this->files->deleteDirectory(base_path('.github'));

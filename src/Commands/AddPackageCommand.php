@@ -7,6 +7,7 @@ namespace BerryValley\LaravelStarter\Commands;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
+use Illuminate\Support\Composer;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\select;
@@ -20,7 +21,7 @@ class AddPackageCommand extends Command
 
     public function handle(Git $git): int
     {
-        /** @var \Illuminate\Support\Composer $composer */
+        /** @var Composer $composer */
         $composer = app('composer');
         /** @var array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string}> $packages */
         $packages = config()->array('starter.packages', []);

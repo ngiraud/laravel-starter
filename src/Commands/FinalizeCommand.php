@@ -7,6 +7,7 @@ namespace BerryValley\LaravelStarter\Commands;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
+use Illuminate\Support\Composer;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'starter:finalize')]
@@ -18,7 +19,7 @@ class FinalizeCommand extends Command
 
     public function handle(Git $git): int
     {
-        /** @var \Illuminate\Support\Composer $composer */
+        /** @var Composer $composer */
         $composer = app('composer');
         $runner = Runner::detect();
         $applied = [];
