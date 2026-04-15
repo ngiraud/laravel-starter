@@ -4,118 +4,53 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Actions;
 
-use BerryValley\LaravelStarter\Exceptions\EnvironmentFileException;
 use Illuminate\Support\Str;
 
 class UpdateEnvironmentAction
 {
     /**
-     * @var array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}
+     * @param  array<int, string>  $dockerServices
      */
-    protected array $preferences;
-
-    /**
-     * Update environment file with user preferences and Docker service configurations
-     *
-     * Applies base configuration (app name, locale, mail settings) and configures
-     * Redis and Minio services based on selected Docker services.
-     *
-     * @param  string  $path  Path to the environment file (.env or .env.example)
-     * @param  array{dockerServices: array<int, string>, selectedPackages: array<string, string>, appName: string, locale: string, database: string}  $preferences
-     */
-    public function handle(string $path, array $preferences): void
+    public function handle(string $path, string $appName, string $locale, string $database, array $dockerServices = []): void
     {
-        $this->preferences = $preferences;
+        $content = (string) file_get_contents($path);
 
-        $environment = $this->readEnvironmentFile($path);
+        $content = $this->applyBaseConfiguration($content, $appName, $locale, $database);
 
-        $environment = $this->applyBaseConfiguration($environment);
-
-        $environment = $this->configureRedis($environment);
-        $environment = $this->configureFilesystem($environment);
-
-        $this->writeEnvironmentFile($path, $environment);
-    }
-
-    /**
-     * Read environment file content and validate it exists
-     */
-    protected function readEnvironmentFile(string $path): string
-    {
-        $content = file_get_contents($path);
-
-        if ($content === false) {
-            throw new EnvironmentFileException("Unable to read {$path} file");
+        if (in_array('redis', $dockerServices)) {
+            $content = $this->configureRedis($content);
         }
 
-        return $content;
-    }
-
-    /**
-     * Write content to environment file and validate success
-     */
-    protected function writeEnvironmentFile(string $path, string $content): void
-    {
-        if (file_put_contents($path, $content) === false) {
-            throw new EnvironmentFileException("Unable to write {$path} file");
-        }
-    }
-
-    /**
-     * Apply base application configuration to environment content
-     *
-     * Updates app name, locale, faker locale, session driver, and mail settings.
-     */
-    protected function applyBaseConfiguration(string $content): string
-    {
-        $fakerLocale = sprintf('%s_%s', $this->preferences['locale'], Str::upper($this->preferences['locale']));
-
-        $replacements = [
-            'APP_NAME=Laravel' => "APP_NAME={$this->preferences['appName']}",
-            'APP_LOCALE=en' => "APP_LOCALE={$this->preferences['locale']}",
-            'APP_FAKER_LOCALE=en_US' => "APP_FAKER_LOCALE={$fakerLocale}",
-            'SESSION_DRIVER=database' => 'SESSION_DRIVER=cookie',
-            'MAIL_MAILER=log' => 'MAIL_MAILER=smtp',
-            'MAIL_HOST=127.0.0.1' => 'MAIL_HOST=host.docker.internal',
-            'MAIL_USERNAME=null' => 'MAIL_USERNAME="${APP_NAME}"',
-            'MAIL_FROM_ADDRESS="hello@example.com"' => 'MAIL_FROM_ADDRESS="support@'.$this->preferences['database'].'.local"',
-        ];
-
-        return str_replace(array_keys($replacements), array_values($replacements), $content);
-    }
-
-    /**
-     * Configure Redis settings in environment content if Redis service is selected
-     *
-     * Updates session driver, queue connection, and cache store to use Redis.
-     */
-    protected function configureRedis(string $content): string
-    {
-        if (! in_array('redis', $this->preferences['dockerServices'])) {
-            return $content;
+        if (in_array('minio', $dockerServices) || in_array('rustfs', $dockerServices)) {
+            $content = $this->configureS3($content);
         }
 
-        $replacements = [
-            'SESSION_DRIVER=cookie' => 'SESSION_DRIVER=redis',
-            'QUEUE_CONNECTION=database' => 'QUEUE_CONNECTION=redis',
-            'CACHE_STORE=database' => 'CACHE_STORE=redis',
-        ];
-
-        return str_replace(array_keys($replacements), array_values($replacements), $content);
+        file_put_contents($path, $content);
     }
 
-    /**
-     * Configure Minio or RustFS (AWS S3 compatible) settings if Minio or RustFS service is selected
-     *
-     * Updates filesystem disk to S3, sets AWS credentials for local development,
-     * and configures S3 endpoints for Minio or RustFS.
-     */
-    protected function configureFilesystem(string $content): string
+    private function applyBaseConfiguration(string $content, string $appName, string $locale, string $database): string
     {
-        if (! in_array('minio', $this->preferences['dockerServices']) && ! in_array('rustfs', $this->preferences['dockerServices'])) {
-            return $content;
-        }
+        $fakerLocale = $locale.'_'.Str::upper($locale);
+        $appNameValue = str_contains($appName, ' ') ? "\"{$appName}\"" : $appName;
 
+        return str_replace(
+            ['APP_NAME=Laravel', 'APP_LOCALE=en', 'APP_FAKER_LOCALE=en_US', 'SESSION_DRIVER=database'],
+            ["APP_NAME={$appNameValue}", "APP_LOCALE={$locale}", "APP_FAKER_LOCALE={$fakerLocale}", 'SESSION_DRIVER=cookie'],
+            preg_replace('/^DB_DATABASE=.*/m', "DB_DATABASE={$database}", $content) ?? $content,
+        );
+    }
+
+    private function configureRedis(string $content): string
+    {
+        return str_replace(
+            ['SESSION_DRIVER=cookie', 'QUEUE_CONNECTION=database', 'CACHE_STORE=database'],
+            ['SESSION_DRIVER=redis', 'QUEUE_CONNECTION=redis', 'CACHE_STORE=redis'],
+            $content,
+        );
+    }
+
+    private function configureS3(string $content): string
+    {
         $content = str_replace('FILESYSTEM_DISK=local', 'FILESYSTEM_DISK=s3', $content);
 
         $content = str_replace('AWS_USE_PATH_STYLE_ENDPOINT=false', implode("\n", [

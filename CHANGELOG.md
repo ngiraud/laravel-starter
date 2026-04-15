@@ -2,6 +2,40 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## Unreleased
+
+### Breaking changes
+
+- `starter:install` is now the only orchestrator command — the old monolithic `LaravelStarterCommand` has been removed
+- `config/starter.packages` format changed: entries are now keyed arrays (`label`, `require`, `dev`, `default`, `version?`, `installer?`) instead of class references
+- `ProcessRunner` facade and `PackagesCollection` have been removed
+
+### What's new
+
+- **`starter:init`** — standalone command: git init + .env configuration (app name, locale, database)
+- **`starter:add {package}`** — install a single package + post-install steps + commit; can be run at any time after setup
+- **`starter:remove {package}`** — remove an installed package + cleanup + commit
+- **`starter:publish`** — publish config stubs, update composer.json scripts, gitignore, and optionally AI guidelines
+- **`starter:finalize`** — apply Rector and/or Pint and commit
+- **Sail is now optional** — `starter:install` asks whether to use Sail; the `Runner` auto-detects from compose file presence for standalone commands
+- **Installers** — post-install logic extracted into focused `Installer` classes (`TelescopeInstaller`, `HorizonInstaller`, `FilamentInstaller`, `LaravelBackupInstaller`, `LarastanInstaller`, `RectorInstaller`)
+- **`make:action` publishable** — `starter:publish` and `starter:install` can copy `MakeActionCommand` into the project so the starter package can be safely removed
+- **Self-remove** — `starter:install` proposes `composer remove ngiraud/laravel-starter` at the end of installation
+- **AI guidelines** (`starter:publish`, `starter:install`) — opt-in confirm to copy `.ai/guidelines` stubs into the project
+- **Flysystem S3 adapter** automatically required when `minio` or `rustfs` is selected as a Sail service
+- **GitHub Actions workflows are now conditional** — `phpstan.yml` only copied if Larastan is installed, `rector.yml` only if Rector is installed
+- **New `rector.yml` workflow stub**
+- **`.claude/` added to `.gitignore`** early in the flow (before any package commits) so Boost-generated AI workspace files are never committed
+
+### What's changed
+
+- `phpstan.yml` stub no longer includes a PostgreSQL service (phpstan does not need a database)
+- `UpdateEnvironmentAction` signature simplified: individual parameters instead of a preferences array
+- `PublishFilesAction` no longer depends on exceptions — errors surface naturally
+- Boost removed from the packages list — it is pre-installed in new Laravel projects; only the guidelines publishing step remains
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.13...HEAD
+
 ## v1.0.13 - 2026-01-20
 
 ** What's changed **

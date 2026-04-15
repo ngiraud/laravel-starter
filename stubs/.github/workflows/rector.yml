@@ -1,4 +1,4 @@
-name: static analysis
+name: refactoring
 
 on:
   workflow_dispatch:
@@ -27,5 +27,5 @@ jobs:
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Static Analysis
-        run: composer test:types
+      - name: Rector
+        run: composer test:refactor
