@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.1.0 - 2026-04-16
+
+### What's Changed
+
+* feat: v1.1.0 — Refactoring the complete package. Modular commands, full test suite, PHPStan clean by @ngiraud in https://github.com/ngiraud/laravel-starter/pull/7
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.13...v1.1.0
+
 ## Unreleased
 
 ### Breaking changes
