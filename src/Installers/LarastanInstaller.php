@@ -7,14 +7,12 @@ namespace BerryValley\LaravelStarter\Installers;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Filesystem\Filesystem;
 
-class LarastanInstaller
+class LarastanInstaller extends Installer
 {
-    private const string STUBS_PATH = __DIR__.'/../../stubs';
-
     public function __construct(private readonly Filesystem $files) {}
 
     public function install(Runner $runner): void
     {
-        $this->files->copy(self::STUBS_PATH.'/phpstan.neon.stub', base_path('phpstan.neon'));
+        $this->files->copy($this->stubsPath('phpstan.neon.stub'), base_path('phpstan.neon'));
     }
 }

@@ -7,17 +7,15 @@ namespace BerryValley\LaravelStarter\Installers;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Filesystem\Filesystem;
 
-class LaravelBackupInstaller
+class LaravelBackupInstaller extends Installer
 {
-    private const string STUBS_PATH = __DIR__.'/../../stubs';
-
     public function __construct(private readonly Filesystem $files) {}
 
     public function install(Runner $runner): void
     {
         $runner->run('php artisan vendor:publish --provider="Spatie\\Backup\\BackupServiceProvider" --tag=backup-config');
 
-        $this->files->copyDirectory(self::STUBS_PATH.'/lang/vendor/backup', lang_path('vendor/backup'));
+        $this->files->copyDirectory($this->stubsPath('lang/vendor/backup'), lang_path('vendor/backup'));
 
         $this->configureBackup();
         $this->scheduleBackup();

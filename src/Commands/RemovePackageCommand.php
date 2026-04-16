@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Commands;
 
+use BerryValley\LaravelStarter\Installers\Installer;
+use BerryValley\LaravelStarter\Installers\Uninstallable;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
@@ -21,7 +23,7 @@ class RemovePackageCommand extends Command
     {
         /** @var Composer $composer */
         $composer = app('composer');
-        /** @var array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string}> $packages */
+        /** @var array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string<Installer>, modifies_console?: bool}> $packages */
         $packages = config()->array('starter.packages', []);
 
         /** @var string $key */
@@ -45,13 +47,20 @@ class RemovePackageCommand extends Command
 
         $this->components->info("Removing {$package['label']}");
 
-        if (isset($package['installer']) && method_exists($package['installer'], 'uninstall')) {
-            app($package['installer'])->uninstall($runner);
+        if (isset($package['installer'])) {
+            /** @var Installer $installer */
+            $installer = app($package['installer']);
+
+            if ($installer instanceof Uninstallable) {
+                $installer->uninstall($runner);
+            } elseif ($package['modifies_console'] ?? false) {
+                $this->components->warn('This package added scheduled tasks to routes/console.php. Please remove them manually.');
+            }
         } elseif ($package['modifies_console'] ?? false) {
             $this->components->warn('This package added scheduled tasks to routes/console.php. Please remove them manually.');
         }
 
-        $dev = ($package['dev'] ?? false) ? ' --dev' : '';
+        $dev = $package['dev'] ? ' --dev' : '';
         $runner->run("composer remove {$package['require']}{$dev}");
 
         $git->commit("Remove {$package['label']}");

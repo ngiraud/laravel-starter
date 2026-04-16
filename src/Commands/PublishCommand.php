@@ -22,7 +22,7 @@ class PublishCommand extends Command
 
     public function handle(PublishFilesAction $publishFiles, UpdateComposerScriptsAction $updateScripts, UpdatePackageJsonAction $updatePackageJson, Git $git): int
     {
-        $locale = (string) env('APP_LOCALE', 'en');
+        $locale = config()->string('app.locale', 'en');
         $dockerServices = $this->resolveDockerServices();
 
         $this->components->info('Publishing stub files');
@@ -82,12 +82,12 @@ class PublishCommand extends Command
     {
         $services = [];
 
-        $dbConnection = (string) env('DB_CONNECTION', 'sqlite');
+        $dbConnection = config()->string('database.default', 'sqlite');
         if (in_array($dbConnection, ['mysql', 'pgsql', 'mariadb'])) {
             $services[] = $dbConnection;
         }
 
-        if (env('REDIS_HOST') !== '127.0.0.1') {
+        if (config('database.redis.default.host') !== '127.0.0.1') {
             $services[] = 'redis';
         }
 

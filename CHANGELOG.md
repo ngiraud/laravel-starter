@@ -38,6 +38,11 @@ All notable changes to `laravel-starter` will be documented in this file.
 - `PublishFilesAction` no longer publishes the User model stub — too project-specific
 - Boost removed from the packages list — only guidelines publishing remains
 - `horizon` default changed to `false`
+- All installer classes now extend abstract `Installer` base class; `STUBS_PATH` constant replaced by `stubsPath(?string $path)` method (overridable per installer)
+- New `Uninstallable` interface for installers that support `uninstall()`; `RemovePackageCommand` uses `instanceof Uninstallable` instead of `method_exists`
+- Package array shape extended with `modifies_console?: bool` key
+- `env()` calls in `PublishCommand` replaced with typed `config()->string()` accessors
+- `UpdateComposerScriptsAction::buildScripts()` refactored to use plain typed arrays instead of untyped collections
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.13...HEAD
 

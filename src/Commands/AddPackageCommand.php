@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BerryValley\LaravelStarter\Commands;
 
+use BerryValley\LaravelStarter\Installers\Installer;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
@@ -23,13 +24,10 @@ class AddPackageCommand extends Command
     {
         /** @var Composer $composer */
         $composer = app('composer');
-        /** @var array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string}> $packages */
+        /** @var array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string<Installer>}> $packages */
         $packages = config()->array('starter.packages', []);
 
-        $key = $this->argument('package') ?? select(
-            label: 'Which package would you like to install?',
-            options: collect($packages)->mapWithKeys(fn (array $p, string $k): array => [$k => $p['label']])->all(),
-        );
+        $key = $this->resolvePackageKey($packages);
 
         if (! isset($packages[$key])) {
             $this->components->error("Unknown package [{$key}]. Available: ".implode(', ', array_keys($packages)));
@@ -51,7 +49,9 @@ class AddPackageCommand extends Command
         $this->requirePackage($package, $runner);
 
         if (isset($package['installer'])) {
-            app($package['installer'])->install($runner);
+            /** @var Installer $installer */
+            $installer = app($package['installer']);
+            $installer->install($runner);
         }
 
         $git->commit("Install {$package['label']}");
@@ -61,11 +61,28 @@ class AddPackageCommand extends Command
     }
 
     /**
-     * @param  array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string}  $package
+     * @param  array<string, array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string<Installer>}>  $packages
+     */
+    private function resolvePackageKey(array $packages): string
+    {
+        $key = $this->argument('package');
+
+        if (is_string($key)) {
+            return $key;
+        }
+
+        return (string) select(
+            label: 'Which package would you like to install?',
+            options: collect($packages)->mapWithKeys(fn (array $p, string $k): array => [$k => $p['label']])->all(),
+        );
+    }
+
+    /**
+     * @param  array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string<Installer>}  $package
      */
     private function requirePackage(array $package, Runner $runner): void
     {
-        $dev = ($package['dev'] ?? false) ? ' --dev' : '';
+        $dev = $package['dev'] ? ' --dev' : '';
         $version = isset($package['version']) ? " \"{$package['version']}\"" : '';
 
         $runner->run("composer require {$package['require']}{$version}{$dev}");

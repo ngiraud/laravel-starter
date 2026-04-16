@@ -1,139 +1,84 @@
 # An opinionated starter to launch after creating a fresh Laravel application
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/ngiraud/laravel-starter.svg?style=flat-square)](https://packagist.org/packages/ngiraud/laravel-starter)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ngiraud/laravel-starter/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ngiraud/laravel-starter/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ngiraud/laravel-starter/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ngiraud/laravel-starter/actions?query=workflow%3ATests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ngiraud/laravel-starter/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ngiraud/laravel-starter/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/ngiraud/laravel-starter.svg?style=flat-square)](https://packagist.org/packages/ngiraud/laravel-starter)
 
-This package automates the complete setup of a fresh Laravel application by installing and configuring the packages and tools you commonly use in your projects, with full Git
-management throughout the process.
+This package automates the complete setup of a fresh Laravel application: installing and configuring your preferred packages and tools, with full Git management throughout the process.
 
-It configures Docker Compose with Laravel Sail, installs your preferred packages (Telescope, Horizon, Filament, etc.), sets up Composer scripts for development, publishes
-configuration files and stubs, configures your environment according to your preferences (locale, database, services), and automatically creates semantic Git commits for each step.
+It configures Docker Compose with Laravel Sail, installs your preferred packages (Telescope, Horizon, Filament, etc.), sets up Composer and npm scripts for development, publishes configuration files and stubs, configures your environment (locale, database, services), and automatically creates semantic Git commits for each step.
 
 ## Installation
 
-Install the package in your fresh Laravel application:
-
 ```bash
-composer require ngiraud/laravel-starter
+composer require ngiraud/laravel-starter --dev
 ```
 
 ## Usage
 
-After creating a new Laravel application with a starter kit, simply run:
+### Full setup
+
+Run the interactive installer on a fresh Laravel application:
 
 ```bash
 php artisan starter:install
 ```
 
-The command will guide you interactively through the complete setup process:
+It will guide you through the complete setup and delegate to the sub-commands below. At the end it offers to remove itself from your project.
 
-## 🔧 Environment Configuration
+### Individual commands
 
-- **Application settings**: name, locale (fr/en), database configuration
-- **Docker services**: MySQL, Redis, MinIO, Mailpit, Selenium, and more
-- **Git repository**: automatic initialization and semantic commits throughout
+Each step is also available as a standalone command, usable at any time after initial setup:
 
-## 📦 Package Management
+| Command | Description |
+|---|---|
+| `starter:init` | `git init` + `.env` configuration (name, locale, database) |
+| `starter:add {package}` | Install a package + post-install steps + commit |
+| `starter:remove {package}` | Remove a package + cleanup + commit |
+| `starter:publish` | Publish config stubs, scripts, GitHub Actions, and opt-in extras |
+| `starter:finalize` | Run `composer lint` (Rector + Pint) and commit |
 
-- **Install Composer packages**: Laravel Telescope, Horizon, Filament, Larastan, Rector, etc.
-- **Frontend dependencies**: automatic npm install via Sail
-- **Service dependencies**: automatic installation (e.g., AWS S3 for MinIO)
+## Available packages
 
-## 🛠️ Development Environment
+| Key | Package | Default |
+|---|---|---|
+| `telescope` | Laravel Telescope | ✓ |
+| `horizon` | Laravel Horizon | — |
+| `filament` | Filament | — |
+| `larastan` | Larastan | ✓ |
+| `rector` | Rector (Laravel) | ✓ |
+| `backup` | Laravel Backup | — |
+| `paratest` | Paratest | — |
+| `nightwatch` | Laravel Nightwatch | — |
 
-- **Composer scripts**: `composer dev`, `composer test`, `composer lint`, `composer refactor`
-- **Configuration files**: Pint, PHPStan, Rector configurations
-- **GitHub Actions**: CI/CD workflows with proper service dependencies
-- **Code quality**: automatic Rector and Pint formatting at the end
+## What gets published
 
-## 📁 Project Structure
+`starter:publish` sets up the following, with opt-in prompts for extras:
 
-- **Custom stubs**: AppServiceProvider, User model, TestCase
-- **Route management**: web-local.php for local development
-- **Language files**: French translations if selected
-- **Action command**: `php artisan make:action` for creating Action classes
+- **Config files**: `pint.json`, `AppServiceProvider.php`, `TestCase.php`
+- **Routes**: `web-local.php` (local-only routes, auto-required in `web.php`)
+- **GitHub Actions**: tests, lint, phpstan (if Larastan), rector (if Rector)
+- **Language files**: French translations if locale is `fr`
+- **Composer scripts**: `dev`, `lint`, `test`, `test:lint`, `test:types`, `test:all`
+- **npm scripts**: `dev`, `lint`, `test:lint`
+- **`.gitignore`**: adds `/.claude` entry
+- **AI guidelines** *(opt-in)*: `.ai/guidelines/` stubs for testing and conventions
+- **Action design pattern** *(opt-in)*: `Action`, `Fakeable`, `FakeAction`, `FakeableTest`, `MakeActionCommand` + `make:action` stub
+- **EnhanceEnum trait** *(opt-in)*: `app/Enums/Concerns/EnhanceEnum.php`
 
-## 📋 Available Packages
+## Development scripts
 
-The installer offers these carefully selected packages:
-
-- **🔭 Laravel Telescope** - Debugging and monitoring dashboard
-- **⏱️ Laravel Horizon** - Redis queue management and monitoring
-- **🎛️ Filament** - Modern admin panel framework
-- **🔍 Larastan** - Static analysis with PHPStan for Laravel
-- **🔄 Rector** - Automated code refactoring and modernization
-- **💾 Laravel Backup** - Database and file backup automation
-- **⚡ Paratest** - Parallel test execution for faster testing
-- **👀 Laravel Nightwatch** - Application monitoring and alerting
-
-## ⚡ Development Scripts
-
-The installer automatically adds these convenient Composer scripts:
+After running the installer, these scripts are available in your project:
 
 ```bash
-composer dev      # Start all development services (logs, vite, queue)
-composer dev:ssr  # Version with Inertia SSR support
-composer test     # Run tests with coverage reporting
-composer lint     # Code formatting with Laravel Pint
-composer refactor # Automated refactoring with Rector
+composer dev        # Start all dev services concurrently (logs, vite, queue)
+composer lint       # Rector + Pint + ESLint
+composer test       # Run the test suite
+composer test:lint  # Dry-run lint (CI)
+composer test:types # PHPStan (if Larastan installed)
+composer test:all   # Full CI suite
 ```
-
-## 🚀 Installation Process
-
-The package follows a comprehensive workflow:
-
-1. **Prerequisites check** - Ensures Laravel Sail is installed
-2. **User preferences** - Interactive prompts for services and packages
-3. **Git initialization** - Sets up repository with initial commit
-4. **Environment setup** - Updates .env and .env.example files
-5. **Sail installation** - Configures Docker services
-6. **Package installation** - Installs selected Composer packages with individual commits
-7. **File publishing** - Publishes stubs, configurations, and GitHub Actions
-8. **Database migration** - Sets up initial database schema
-9. **Code optimization** - Applies Rector and Pint formatting rules
-10. **Completion** - Provides next steps for development
-
-## 🛠️ PHPStorm Configuration
-
-To optimize your development experience with PHPStorm, configure the following settings (**Settings** on Windows/Linux or **Preferences** on macOS):
-
-### PHP Interpreter Setup
-
-**Languages & Frameworks → PHP**
-
-1. **CLI Interpreter**
-   - Click `+` to add a new interpreter
-   - Select **From Docker, Vagrant, VM, WSL, Remote...**
-   - Choose **Docker Compose** and select the `laravel.test` service
-   - Verify the PHP version is detected correctly
-
-2. **Language Level**
-   - Set according to your project's PHP version (should match the remote interpreter)
-
-3. **Test Frameworks**
-   - Click `+` and select **PHPUnit** (or **Pest** if using Pest)
-   - Choose **Use Composer autoloader** with the remote interpreter
-   - Set the path to `vendor/autoload.php`
-
-4. **Quality Tools → Laravel Pint**
-   - Enable Laravel Pint
-   - Configuration file: Leave default or specify `.pint.json` if you have one
-   - **Note**: Using the remote interpreter may cause slower formatting but ensures consistency
-
-### Development Automation
-
-**Tools → Actions on Save**
-
-- ✓ Reformat code
-- ✓ Optimize imports
-
-### MCP Integration (Optional)
-
-**Tools → AI Assistant → Model Context Protocol (MCP)**
-
-- Enable **Laravel Boost** for enhanced Laravel development assistance
 
 ## Testing
 

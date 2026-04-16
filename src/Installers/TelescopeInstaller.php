@@ -8,7 +8,7 @@ use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 
-class TelescopeInstaller
+class TelescopeInstaller extends Installer
 {
     public function __construct(private readonly Filesystem $files) {}
 

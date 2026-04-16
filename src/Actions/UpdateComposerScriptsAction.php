@@ -59,37 +59,40 @@ readonly class UpdateComposerScriptsAction
         $hasLarastan = $this->composer->hasPackage('larastan/larastan');
         $hasParatest = $this->composer->hasPackage('brianium/paratest');
 
-        $lint = collect();
+        /** @var array<int, string> $lint */
+        $lint = [];
         if ($hasRector) {
-            $lint->push('rector');
+            $lint[] = 'rector';
         }
-        $lint->push('pint --parallel');
-        $lint->push('npm run lint');
+        $lint[] = 'pint --parallel';
+        $lint[] = 'npm run lint';
 
-        $testLint = collect(['pint --parallel --test']);
+        /** @var array<int, string> $testLint */
+        $testLint = ['pint --parallel --test'];
         if ($hasRector) {
-            $testLint->push('rector --dry-run');
+            $testLint[] = 'rector --dry-run';
         }
-        $testLint->push('npm run test:lint');
+        $testLint[] = 'npm run test:lint';
 
-        $testAll = collect(['@test:lint']);
+        /** @var array<int, string> $testAll */
+        $testAll = ['@test:lint'];
         if ($hasLarastan) {
-            $testAll->push('@test:types');
+            $testAll[] = '@test:types';
         }
-        $testAll->push('@test');
+        $testAll[] = '@test';
 
         $scripts = [
             'dev' => [
                 'Composer\\Config::disableProcessTimeout',
                 $this->buildConcurrentlyCommand($devCommands),
             ],
-            'lint' => $lint->values()->all(),
-            'test:lint' => $testLint->values()->all(),
+            'lint' => $lint,
+            'test:lint' => $testLint,
             'test' => [
                 '@php artisan config:clear --ansi',
                 sprintf('@php artisan test%s --parallel --compact', $hasParatest ? ' --parallel' : ''),
             ],
-            'test:all' => $testAll->values()->all(),
+            'test:all' => $testAll,
         ];
 
         if ($hasLarastan) {

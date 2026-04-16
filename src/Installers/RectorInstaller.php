@@ -7,14 +7,12 @@ namespace BerryValley\LaravelStarter\Installers;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Filesystem\Filesystem;
 
-class RectorInstaller
+class RectorInstaller extends Installer
 {
-    private const string STUBS_PATH = __DIR__.'/../../stubs';
-
     public function __construct(private readonly Filesystem $files) {}
 
     public function install(Runner $runner): void
     {
-        $this->files->copy(self::STUBS_PATH.'/rector.php.stub', base_path('rector.php'));
+        $this->files->copy($this->stubsPath('rector.php.stub'), base_path('rector.php'));
     }
 }

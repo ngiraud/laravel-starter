@@ -72,7 +72,7 @@ class InstallCommand extends Command
         $allPackages = config()->array('starter.packages', []);
 
         $defaults = collect($allPackages)
-            ->filter(fn (array $p): bool => $p['default'] ?? false)
+            ->filter(fn (array $p): bool => $p['default'])
             ->keys()
             ->all();
 

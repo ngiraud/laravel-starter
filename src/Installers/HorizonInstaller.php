@@ -6,7 +6,7 @@ namespace BerryValley\LaravelStarter\Installers;
 
 use BerryValley\LaravelStarter\Support\Runner;
 
-class HorizonInstaller
+class HorizonInstaller extends Installer
 {
     public function install(Runner $runner): void
     {
