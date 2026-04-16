@@ -44,12 +44,6 @@ class UpdatePackageJsonAction
      */
     private function isAlreadyApplied(array $scripts): bool
     {
-        foreach (self::SCRIPTS as $name => $command) {
-            if (($scripts[$name] ?? null) !== $command) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(self::SCRIPTS, fn ($command, $name): bool => ! (($scripts[$name] ?? null) !== $command));
     }
 }

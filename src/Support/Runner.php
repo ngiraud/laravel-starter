@@ -36,8 +36,8 @@ class Runner
     {
         $full = $this->useSail ? "./vendor/bin/sail {$command}" : $command;
 
-        Process::tty(true)
-            ->run($full, fn (string $type, string $output) => print ($output))
+        Process::tty(! app()->environment('testing'))
+            ->run($full, fn (string $type, string $output): int => print ($output))
             ->throw();
     }
 
