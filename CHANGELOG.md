@@ -7,32 +7,37 @@ All notable changes to `laravel-starter` will be documented in this file.
 ### Breaking changes
 
 - `starter:install` is now the only orchestrator command — the old monolithic `LaravelStarterCommand` has been removed
-- `config/starter.packages` format changed: entries are now keyed arrays (`label`, `require`, `dev`, `default`, `version?`, `installer?`) instead of class references
+- `config/starter.packages` format changed: entries are now keyed arrays (`label`, `require`, `dev`, `default`, `version?`, `installer?`, `modifies_console?`) instead of class references
 - `ProcessRunner` facade and `PackagesCollection` have been removed
+- `make:action` is no longer registered as a package command — it must be published to the project via the Action design pattern confirm in `starter:publish`
+- `composer refactor` script replaced by `composer lint` (which now runs Rector + Pint + ESLint together)
 
 ### What's new
 
 - **`starter:init`** — standalone command: git init + .env configuration (app name, locale, database)
 - **`starter:add {package}`** — install a single package + post-install steps + commit; can be run at any time after setup
-- **`starter:remove {package}`** — remove an installed package + cleanup + commit
-- **`starter:publish`** — publish config stubs, update composer.json scripts, gitignore, and optionally AI guidelines
-- **`starter:finalize`** — apply Rector and/or Pint and commit
-- **Sail is now optional** — `starter:install` asks whether to use Sail; the `Runner` auto-detects from compose file presence for standalone commands
-- **Installers** — post-install logic extracted into focused `Installer` classes (`TelescopeInstaller`, `HorizonInstaller`, `FilamentInstaller`, `LaravelBackupInstaller`, `LarastanInstaller`, `RectorInstaller`)
-- **`make:action` publishable** — `starter:publish` and `starter:install` can copy `MakeActionCommand` into the project so the starter package can be safely removed
+- **`starter:remove {package}`** — remove an installed package + cleanup + commit; warns when `modifies_console: true` and no `uninstall()` method
+- **`starter:publish`** — publish config stubs, update scripts, gitignore, and opt-in confirms for AI guidelines, Action design pattern, and EnhanceEnum trait; accepts `--docker-services` option
+- **`starter:finalize`** — run `composer lint` (Rector + Pint + ESLint) and commit
+- **`starter:install` delegates to sub-commands** — packages loop calls `starter:add`, publish step calls `starter:publish`, finalize step calls `starter:finalize`
+- **Action design pattern** — opt-in confirm publishes `Action`, `Fakeable`, `FakeAction`, `FakeableTest`, and `MakeActionCommand` to the project
+- **EnhanceEnum trait** — separate opt-in confirm in `starter:publish` / `starter:install`
+- **Sail is now optional** — `starter:install` asks whether to use Sail; `Runner` auto-detects from compose file presence for standalone commands; TTY disabled in non-terminal environments
+- **Installers** — post-install/pre-remove logic in focused classes (`TelescopeInstaller`, `HorizonInstaller`, `FilamentInstaller`, `LaravelBackupInstaller`, `LarastanInstaller`, `RectorInstaller`)
 - **Self-remove** — `starter:install` proposes `composer remove ngiraud/laravel-starter` at the end of installation
-- **AI guidelines** (`starter:publish`, `starter:install`) — opt-in confirm to copy `.ai/guidelines` stubs into the project
-- **Flysystem S3 adapter** automatically required when `minio` or `rustfs` is selected as a Sail service
+- **AI guidelines** — opt-in confirm to copy `.ai/guidelines` stubs into the project
+- **Flysystem S3 adapter** — automatically required when `minio` or `rustfs` is selected as a Sail service
 - **GitHub Actions workflows are now conditional** — `phpstan.yml` only copied if Larastan is installed, `rector.yml` only if Rector is installed
-- **New `rector.yml` workflow stub**
-- **`.claude/` added to `.gitignore`** early in the flow (before any package commits) so Boost-generated AI workspace files are never committed
+- **`.claude/` added to `.gitignore`** before the first commit so Boost-generated files are never committed
+- **Test suite** — full Pest test suite via Orchestra Testbench covering all actions, commands, `Git`, and `Runner`
 
 ### What's changed
 
-- `phpstan.yml` stub no longer includes a PostgreSQL service (phpstan does not need a database)
+- `phpstan.yml` stub no longer includes a PostgreSQL service
 - `UpdateEnvironmentAction` signature simplified: individual parameters instead of a preferences array
-- `PublishFilesAction` no longer depends on exceptions — errors surface naturally
-- Boost removed from the packages list — it is pre-installed in new Laravel projects; only the guidelines publishing step remains
+- `PublishFilesAction` no longer publishes the User model stub — too project-specific
+- Boost removed from the packages list — only guidelines publishing remains
+- `horizon` default changed to `false`
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.0.13...HEAD
 
