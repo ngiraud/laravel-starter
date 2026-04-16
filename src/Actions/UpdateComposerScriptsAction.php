@@ -11,26 +11,20 @@ readonly class UpdateComposerScriptsAction
 {
     protected Composer $composer;
 
-    public function __construct(
-    ) {
+    public function __construct()
+    {
         $this->composer = app('composer');
     }
 
-    /**
-     * Update composer.json with development and testing scripts
-     *
-     * Adds scripts for parallel development (dev), SSR builds (dev:ssr),
-     * linting, testing, and static analysis based on installed packages.
-     */
     public function handle(): void
     {
         $this->composer->modify(function (array $composer): array {
-            $excludingKeys = array_flip(['dev', 'dev:ssr', 'test']);
+            $keep = array_flip(['dev', 'test', 'test:lint', 'test:types', 'test:all', 'lint']);
 
             /** @var array<string, string|array<int, string>> $scripts */
             $scripts = $composer['scripts'] ?? [];
 
-            $composer['scripts'] = array_diff_key($scripts, $excludingKeys) + $this->buildScripts();
+            $composer['scripts'] = array_diff_key($scripts, $keep) + $this->buildScripts();
 
             return $composer;
         });
@@ -44,22 +38,15 @@ readonly class UpdateComposerScriptsAction
         return collect([
             ['color' => '#93c5fd', 'command' => 'php artisan pail --timeout=0', 'name' => 'logs'],
             ['color' => '#fdba74', 'command' => 'npm run dev', 'name' => 'vite'],
-            ['color' => '#fdba74', 'command' => 'php artisan inertia:start-ssr', 'name' => 'ssr'],
             ['color' => '#93c5fd', 'command' => $this->getQueueCommand(), 'name' => 'queue'],
         ]);
     }
 
-    /**
-     * Get the appropriate queue command based on installed packages
-     *
-     * Returns Horizon command if available, otherwise falls back to basic queue listener.
-     */
     protected function getQueueCommand(): string
     {
-        return match ($this->composer->hasPackage('laravel/horizon')) {
-            true => 'php artisan horizon',
-            false => 'php artisan queue:listen database --tries=1 --queue=default',
-        };
+        return $this->composer->hasPackage('laravel/horizon')
+            ? 'php artisan horizon'
+            : 'php artisan queue:listen database --tries=1 --queue=default';
     }
 
     /**
@@ -67,42 +54,48 @@ readonly class UpdateComposerScriptsAction
      */
     protected function buildScripts(): array
     {
-        $commands = $this->buildCommands();
+        $devCommands = $this->buildCommands();
+        $hasRector = $this->composer->hasPackage('driftingly/rector-laravel');
+        $hasLarastan = $this->composer->hasPackage('larastan/larastan');
+        $hasParatest = $this->composer->hasPackage('brianium/paratest');
 
-        $devCommands = $commands->where('name', '!=', 'ssr');
-        $ssrCommands = $commands->where('name', '!=', 'vite');
+        /** @var array<int, string> $lint */
+        $lint = [];
+        if ($hasRector) {
+            $lint[] = 'rector';
+        }
+        $lint[] = 'pint --parallel';
+        $lint[] = 'npm run lint';
+
+        /** @var array<int, string> $testLint */
+        $testLint = ['pint --parallel --test'];
+        if ($hasRector) {
+            $testLint[] = 'rector --dry-run';
+        }
+        $testLint[] = 'npm run test:lint';
+
+        /** @var array<int, string> $testAll */
+        $testAll = ['@test:lint'];
+        if ($hasLarastan) {
+            $testAll[] = '@test:types';
+        }
+        $testAll[] = '@test';
 
         $scripts = [
             'dev' => [
                 'Composer\\Config::disableProcessTimeout',
                 $this->buildConcurrentlyCommand($devCommands),
             ],
-            'dev:ssr' => [
-                'npm run build:ssr',
-                'Composer\\Config::disableProcessTimeout',
-                $this->buildConcurrentlyCommand($ssrCommands),
-            ],
-            'lint' => ['pint --parallel'],
+            'lint' => $lint,
+            'test:lint' => $testLint,
             'test' => [
                 '@php artisan config:clear --ansi',
-                sprintf(
-                    '@php artisan test %s--compact --coverage --min=90',
-                    $this->composer->hasPackage('brianium/paratest') ? '--parallel ' : ''
-                ),
+                sprintf('@php artisan test%s --parallel --compact', $hasParatest ? ' --parallel' : ''),
             ],
-            'test:lint' => [
-                'pint --parallel --test',
-                'npm run lint',
-                'npm run format:check',
-            ],
+            'test:all' => $testAll,
         ];
 
-        if ($this->composer->hasPackage('driftingly/rector-laravel')) {
-            $scripts['refactor'] = ['rector'];
-            $scripts['test:refactor'] = ['rector --dry-run'];
-        }
-
-        if ($this->composer->hasPackage('larastan/larastan')) {
+        if ($hasLarastan) {
             $scripts['test:types'] = ['phpstan'];
         }
 
@@ -117,10 +110,8 @@ readonly class UpdateComposerScriptsAction
         return sprintf(
             'npx concurrently -c "%s" %s --names=%s --kill-others',
             $commands->pluck('color')->implode(','),
-            $commands->map(fn (array $command): string =>
-                /** @var array{color: string, command: string, name: string} $command */
-                sprintf('"%s"', $command['command']))->implode(' '),
-            $commands->pluck('name')->implode(',')
+            $commands->map(fn (array $command): string => sprintf('"%s"', $command['command']))->implode(' '),
+            $commands->pluck('name')->implode(','),
         );
     }
 }
