@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Commands;
 
 use BerryValley\LaravelStarter\Actions\PublishFilesAction;
-use BerryValley\LaravelStarter\Actions\UpdateComposerScriptsAction;
 use BerryValley\LaravelStarter\Actions\UpdateEnvironmentAction;
-use BerryValley\LaravelStarter\Actions\UpdatePackageJsonAction;
 use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
@@ -37,17 +35,8 @@ class InstallCommand extends Command
      */
     protected array $defaultDockerServices = ['pgsql', 'redis'];
 
-    public function handle(
-        Git $git,
-        Filesystem $files,
-        UpdateEnvironmentAction $updateEnv,
-        PublishFilesAction $publishFiles,
-        UpdateComposerScriptsAction $updateScripts,
-        UpdatePackageJsonAction $updatePackageJson,
-    ): int {
-        /** @var Composer $composer */
-        $composer = app('composer');
-
+    public function handle(Git $git, Filesystem $files, UpdateEnvironmentAction $updateEnv, PublishFilesAction $publishFiles): int
+    {
         // ─── Collect preferences ──────────────────────────────────────────
 
         $appName = text(
@@ -116,34 +105,19 @@ class InstallCommand extends Command
             $this->installSail($git, $dockerServices);
         }
 
-        $runner = $useSail ? Runner::forSail() : Runner::local();
+        $runner = Runner::detect();
 
         // ─── Packages ─────────────────────────────────────────────────────
 
         foreach ($selectedKeys as $key) {
-            $package = $allPackages[$key];
-
-            if ($composer->hasPackage($package['require'])) {
-                $this->components->warn("{$package['label']} is already installed. Skipping.");
-
-                continue;
-            }
-
             $this->newLine();
-            $this->components->info("Installing {$package['label']}");
-
-            $dev = ($package['dev'] ?? false) ? ' --dev' : '';
-            $version = isset($package['version']) ? " \"{$package['version']}\"" : '';
-            $runner->run("composer require {$package['require']}{$version}{$dev}");
-
-            if (isset($package['installer'])) {
-                app($package['installer'])->install($runner);
-            }
-
-            $git->commit("Install {$package['label']}");
+            $this->call('starter:add', ['package' => $key]);
         }
 
         // ─── Flysystem S3 adapter (implicit when Minio or RustFS is used) ─
+
+        /** @var Composer $composer */
+        $composer = app('composer');
 
         if (array_intersect(['minio', 'rustfs'], $dockerServices) !== [] && ! $composer->hasPackage('league/flysystem-aws-s3-v3')) {
             $this->newLine();
@@ -155,22 +129,9 @@ class InstallCommand extends Command
         // ─── Publish files ────────────────────────────────────────────────
 
         $this->newLine();
-        $this->components->info('Publishing files');
-        $publishFiles->publishConfigFiles();
-        $publishFiles->publishWebLocalFile();
-        $publishFiles->publishGithubActions($dockerServices);
-        $publishFiles->publishLanguageFiles($locale);
-        $publishFiles->updateConsoleFile();
-        $updateScripts->handle();
-        $updatePackageJson->handle();
-
-        if (confirm('Publish AI guidelines? (.ai/guidelines)', default: true)) {
-            $publishFiles->publishAiGuidelines();
-        }
-
-        $publishFiles->publishMakeActionCommand();
-
-        $git->commit('Publish stub files and update composer.json scripts');
+        $this->call('starter:publish', [
+            '--docker-services' => implode(',', $dockerServices),
+        ]);
 
         // ─── Frontend dependencies ────────────────────────────────────────
 
@@ -188,29 +149,12 @@ class InstallCommand extends Command
 
         // ─── Rector + Pint ────────────────────────────────────────────────
 
-        $applied = [];
-
-        if ($composer->hasPackage('driftingly/rector-laravel')) {
-            $this->newLine();
-            $this->components->info('Applying Rector rules');
-            $runner->run('composer refactor');
-            $applied[] = 'Rector';
-        }
-
-        if ($composer->hasPackage('laravel/pint')) {
-            $this->newLine();
-            $this->components->info('Applying Pint rules');
-            $runner->run('composer lint');
-            $applied[] = 'Pint';
-        }
-
-        if ($applied !== []) {
-            $git->commit('Apply '.implode(' and ', $applied).' rules', 'chore');
-        }
+        $this->newLine();
+        $this->call('starter:finalize');
 
         // ─── Self-remove ──────────────────────────────────────────────────
 
-        if (confirm('Remove this starter package? (make:action has been published to your project)', default: true)) {
+        if (confirm('Remove this starter package?', default: true)) {
             $runner->run('composer remove ngiraud/laravel-starter --dev');
             $git->commit('Remove laravel-starter package', 'chore');
         }

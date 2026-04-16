@@ -17,23 +17,37 @@ class PublishFilesAction
     {
         $this->copy('pint.json.stub', base_path('pint.json'));
         $this->copy('AppServiceProvider.php.stub', app_path('Providers/AppServiceProvider.php'));
-        $this->copy('User.php.stub', app_path('Models/User.php'));
         $this->copy('TestCase.php.stub', base_path('tests/TestCase.php'));
+    }
 
+    /**
+     * Publish the Action design pattern: abstract Action, Fakeable trait, EnhanceEnum trait,
+     * test fixtures, and the make:action command + stub (so the package can be removed).
+     */
+    public function publishActionPattern(): void
+    {
         $this->files->ensureDirectoryExists(app_path('Actions'));
         $this->copy('Actions/Action.php.stub', app_path('Actions/Action.php'));
 
         $this->files->ensureDirectoryExists(app_path('Support'));
         $this->copy('Support/Fakeable.php.stub', app_path('Support/Fakeable.php'));
 
-        $this->files->ensureDirectoryExists(app_path('Enums/Concerns'));
-        $this->copy('Enums/Concerns/EnhanceEnum.php.stub', app_path('Enums/Concerns/EnhanceEnum.php'));
-
         $this->files->ensureDirectoryExists(base_path('tests/Fixtures'));
         $this->copy('tests/Fixtures/FakeAction.php.stub', base_path('tests/Fixtures/FakeAction.php'));
 
         $this->files->ensureDirectoryExists(base_path('tests/Unit/Support'));
         $this->copy('tests/Unit/Support/FakeableTest.php.stub', base_path('tests/Unit/Support/FakeableTest.php'));
+
+        $this->files->ensureDirectoryExists(app_path('Console/Commands'));
+        $this->files->ensureDirectoryExists(base_path('stubs/commands'));
+        $this->copy('commands/MakeActionCommand.php.stub', app_path('Console/Commands/MakeActionCommand.php'));
+        $this->copy('commands/action.stub', base_path('stubs/commands/action.stub'));
+    }
+
+    public function publishEnhanceEnum(): void
+    {
+        $this->files->ensureDirectoryExists(app_path('Enums/Concerns'));
+        $this->copy('Enums/Concerns/EnhanceEnum.php.stub', app_path('Enums/Concerns/EnhanceEnum.php'));
     }
 
     public function publishWebLocalFile(): void
@@ -91,26 +105,6 @@ class PublishFilesAction
     public function publishAiGuidelines(): void
     {
         $this->files->copyDirectory(self::STUBS_PATH.'/.ai/guidelines', base_path('.ai/guidelines'));
-    }
-
-    /**
-     * Publish MakeActionCommand to the project so it survives package removal.
-     * Also publishes the action stub it depends on.
-     */
-    public function publishMakeActionCommand(): void
-    {
-        $this->files->ensureDirectoryExists(app_path('Console/Commands'));
-        $this->files->ensureDirectoryExists(base_path('stubs/commands'));
-
-        $this->files->copy(
-            self::STUBS_PATH.'/commands/MakeActionCommand.php.stub',
-            app_path('Console/Commands/MakeActionCommand.php'),
-        );
-
-        $this->files->copy(
-            self::STUBS_PATH.'/commands/action.stub',
-            base_path('stubs/commands/action.stub'),
-        );
     }
 
     /**

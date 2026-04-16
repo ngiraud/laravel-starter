@@ -8,7 +8,6 @@ use BerryValley\LaravelStarter\Commands\AddPackageCommand;
 use BerryValley\LaravelStarter\Commands\FinalizeCommand;
 use BerryValley\LaravelStarter\Commands\InitCommand;
 use BerryValley\LaravelStarter\Commands\InstallCommand;
-use BerryValley\LaravelStarter\Commands\MakeActionCommand;
 use BerryValley\LaravelStarter\Commands\PublishCommand;
 use BerryValley\LaravelStarter\Commands\RemovePackageCommand;
 use Spatie\LaravelPackageTools\Package;
@@ -28,7 +27,6 @@ class LaravelStarterServiceProvider extends PackageServiceProvider
                 RemovePackageCommand::class,
                 PublishCommand::class,
                 FinalizeCommand::class,
-                MakeActionCommand::class,
             ]);
     }
 }

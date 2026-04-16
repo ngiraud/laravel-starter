@@ -47,6 +47,8 @@ class RemovePackageCommand extends Command
 
         if (isset($package['installer']) && method_exists($package['installer'], 'uninstall')) {
             app($package['installer'])->uninstall($runner);
+        } elseif ($package['modifies_console'] ?? false) {
+            $this->components->warn('This package added scheduled tasks to routes/console.php. Please remove them manually.');
         }
 
         $dev = ($package['dev'] ?? false) ? ' --dev' : '';

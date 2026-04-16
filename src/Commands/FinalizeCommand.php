@@ -22,24 +22,20 @@ class FinalizeCommand extends Command
         /** @var Composer $composer */
         $composer = app('composer');
         $runner = Runner::detect();
-        $applied = [];
 
-        if ($composer->hasPackage('driftingly/rector-laravel')) {
-            $this->components->info('Applying Rector rules');
-            $runner->run('composer refactor');
-            $applied[] = 'Rector';
+        $hasRector = $composer->hasPackage('driftingly/rector-laravel');
+        $hasPint = $composer->hasPackage('laravel/pint');
+
+        if (! $hasRector && ! $hasPint) {
+            $this->components->warn('No code quality tools installed (Rector, Pint).');
+
+            return self::SUCCESS;
         }
 
-        if ($composer->hasPackage('laravel/pint')) {
-            $this->components->info('Applying Pint rules');
-            $runner->run('composer lint');
-            $applied[] = 'Pint';
-        }
+        $this->components->info('Applying code quality tools');
+        $runner->run('composer lint');
 
-        if ($applied !== []) {
-            $git->commit('Apply '.implode(' and ', $applied).' rules', 'chore');
-        }
-
+        $git->commit('Apply code quality rules', 'chore');
         $this->components->success('Done.');
 
         return self::SUCCESS;

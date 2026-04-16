@@ -1,11 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Fixtures;
 
 use App\Actions\Action;
-use App\Support\Fakeable;
 
-class FakeAction extends Action
-{
-    use Fakeable;
-}
+class FakeAction extends Action {}
+

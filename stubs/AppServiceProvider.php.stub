@@ -90,7 +90,6 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureRelations(): void
     {
-        // @phpstan-ignore-next-line: array should have keys as string, but we put int because it works and we want to add ints as morphs
         //        Relation::enforceMorphMap([
         //            1 => Post::class,
         //            2 => Comment::class,

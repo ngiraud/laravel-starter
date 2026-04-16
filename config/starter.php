@@ -12,12 +12,13 @@ return [
      * Each entry is keyed by a short slug used with starter:add / starter:remove.
      *
      * Keys:
-     *   - label    : Display name shown in prompts
-     *   - require  : Composer package name
-     *   - dev      : Whether to install as --dev
-     *   - default  : Pre-selected in the multiselect prompt
-     *   - version  : Optional version constraint
-     *   - installer: Optional class to run post-install / pre-remove steps
+     *   - label           : Display name shown in prompts
+     *   - require         : Composer package name
+     *   - dev             : Whether to install as --dev
+     *   - default         : Pre-selected in the multiselect prompt
+     *   - version         : Optional version constraint
+     *   - installer       : Optional class to run post-install / pre-remove steps
+     *   - modifies_console: Whether the installer adds entries to routes/console.php (removal warning)
      */
     'packages' => [
 
@@ -59,6 +60,7 @@ return [
             'dev' => false,
             'default' => false,
             'installer' => Installers\HorizonInstaller::class,
+            'modifies_console' => true,
         ],
 
         'backup' => [
@@ -67,6 +69,7 @@ return [
             'dev' => false,
             'default' => false,
             'installer' => Installers\LaravelBackupInstaller::class,
+            'modifies_console' => true,
         ],
 
         'filament' => [

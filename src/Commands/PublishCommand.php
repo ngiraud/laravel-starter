@@ -16,18 +16,19 @@ use function Laravel\Prompts\confirm;
 #[AsCommand(name: 'starter:publish')]
 class PublishCommand extends Command
 {
-    public $signature = 'starter:publish';
+    public $signature = 'starter:publish {--docker-services= : Comma-separated list of active Docker services}';
 
     public $description = 'Publish configuration stubs and update project structure';
 
     public function handle(PublishFilesAction $publishFiles, UpdateComposerScriptsAction $updateScripts, UpdatePackageJsonAction $updatePackageJson, Git $git): int
     {
         $locale = (string) env('APP_LOCALE', 'en');
+        $dockerServices = $this->resolveDockerServices();
 
         $this->components->info('Publishing stub files');
         $publishFiles->publishConfigFiles();
         $publishFiles->publishWebLocalFile();
-        $publishFiles->publishGithubActions($this->detectDockerServices());
+        $publishFiles->publishGithubActions($dockerServices);
         $publishFiles->publishLanguageFiles($locale);
         $publishFiles->updateConsoleFile();
         $publishFiles->updateGitignore();
@@ -40,8 +41,12 @@ class PublishCommand extends Command
             $publishFiles->publishAiGuidelines();
         }
 
-        if (confirm('Publish make:action command to your project? (allows removing this package)', default: true)) {
-            $publishFiles->publishMakeActionCommand();
+        if (confirm('Publish Action design pattern? (Action, Fakeable + make:action command)', default: true)) {
+            $publishFiles->publishActionPattern();
+        }
+
+        if (confirm('Publish EnhanceEnum trait? (app/Enums/Concerns/EnhanceEnum.php)', default: true)) {
+            $publishFiles->publishEnhanceEnum();
         }
 
         $git->commit('Publish stub files and update composer.json scripts');
@@ -49,6 +54,23 @@ class PublishCommand extends Command
         $this->components->success('Files published.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Resolve Docker services from the --docker-services option or by detecting from environment.
+     *
+     * @return array<int, string>
+     */
+    private function resolveDockerServices(): array
+    {
+        /** @var string|null $option */
+        $option = $this->option('docker-services');
+
+        if ($option !== null) {
+            return array_values(array_filter(explode(',', $option)));
+        }
+
+        return $this->detectDockerServices();
     }
 
     /**
