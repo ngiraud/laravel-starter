@@ -50,7 +50,16 @@
     "post-autoload-dump": "@composer run prepare",
     "prepare": "@php vendor/bin/testbench package:discover --ansi",
     "test": "vendor/bin/pest --parallel --compact",
+    "test:lint": [
+      "vendor/bin/pint --parallel --test",
+      "vendor/bin/rector --dry-run"
+    ],
     "test:types": "vendor/bin/phpstan analyse --memory-limit=-1",
+    "test:all": [
+      "@test:lint",
+      "@test:types",
+      "@test"
+    ],
     "lint": "vendor/bin/pint --parallel",
     "refactor": "vendor/bin/rector"
   },

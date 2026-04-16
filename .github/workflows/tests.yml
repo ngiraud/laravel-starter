@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Cache Rector
+        uses: actions/cache@v4
+        with:
+          path: /tmp/rector
+          key: rector-${{ github.run_id }}
+          restore-keys: rector-
+
+      - name: Cache PHPStan
+        uses: actions/cache@v4
+        with:
+          path: /tmp/phpstan
+          key: phpstan-${{ github.run_id }}
+          restore-keys: phpstan-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Run tests
+        run: composer test:all
