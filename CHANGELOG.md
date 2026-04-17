@@ -2,7 +2,15 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
-## Skip npm lint scripts when eslint/prettier are not installed - 2026-04-17
+## v1.1.3 - 2026-04-17
+
+Fix PHPStan errors on `array_merge` calls with mixed-typed values in `UpdateComposerScriptsAction` and `UpdatePackageJsonAction`.
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.2...v1.1.3
+
+## v1.1.2 - 2026-04-17
+
+Skip npm lint scripts when eslint/prettier are not installed - 2026-04-17
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.1...v1.1.2
 
