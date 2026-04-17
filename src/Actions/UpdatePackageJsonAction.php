@@ -23,7 +23,7 @@ class UpdatePackageJsonAction
             fn (string $k): bool => array_key_exists($k, $scripts),
         );
 
-        if (empty($legacyToRemove) && $this->isAlreadyApplied($scripts, $toAdd)) {
+        if ($legacyToRemove === [] && $this->isAlreadyApplied($scripts, $toAdd)) {
             return;
         }
 
@@ -46,11 +46,11 @@ class UpdatePackageJsonAction
      */
     private function buildScripts(array $packageJson): array
     {
-        /** @var array<string, string> $allDeps */
-        $allDeps = array_merge(
-            $packageJson['devDependencies'] ?? [],
-            $packageJson['dependencies'] ?? [],
-        );
+        /** @var array<string, string> $devDependencies */
+        $devDependencies = $packageJson['devDependencies'] ?? [];
+        /** @var array<string, string> $dependencies */
+        $dependencies = $packageJson['dependencies'] ?? [];
+        $allDeps = array_merge($devDependencies, $dependencies);
 
         $hasEslint = array_key_exists('eslint', $allDeps);
         $hasPrettier = array_key_exists('prettier', $allDeps);

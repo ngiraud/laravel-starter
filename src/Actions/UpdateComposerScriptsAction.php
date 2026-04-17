@@ -132,10 +132,11 @@ readonly class UpdateComposerScriptsAction
 
         /** @var array<string, mixed> $packageJson */
         $packageJson = json_decode((string) file_get_contents($path), true);
-        $allDeps = array_merge(
-            $packageJson['devDependencies'] ?? [],
-            $packageJson['dependencies'] ?? [],
-        );
+        /** @var array<string, string> $devDependencies */
+        $devDependencies = $packageJson['devDependencies'] ?? [];
+        /** @var array<string, string> $dependencies */
+        $dependencies = $packageJson['dependencies'] ?? [];
+        $allDeps = array_merge($devDependencies, $dependencies);
 
         return array_key_exists($package, $allDeps);
     }
