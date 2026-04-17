@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.1.1 - 2026-04-17
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.0...v1.1.1
+
 ## v1.1.0 - 2026-04-16
 
 ### Breaking changes
