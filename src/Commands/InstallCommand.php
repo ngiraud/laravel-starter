@@ -173,6 +173,8 @@ class InstallCommand extends Command
     {
         $this->components->info('Installing Sail');
 
+        $this->requireSailInProject();
+
         if (! file_exists($this->composePath())) {
             $this->call('sail:install', ['--with' => implode(',', $dockerServices)]);
             $git->commit('Install Sail');
@@ -183,6 +185,18 @@ class InstallCommand extends Command
         $this->line('  <fg=gray>➜</> <options=bold>./vendor/bin/sail up</>');
 
         pause('Press ENTER once the containers are running.');
+    }
+
+    private function requireSailInProject(): void
+    {
+        /** @var array<string, array<string, string>> $composerJson */
+        $composerJson = json_decode((string) file_get_contents(base_path('composer.json')), true);
+
+        if (isset($composerJson['require']['laravel/sail']) || isset($composerJson['require-dev']['laravel/sail'])) {
+            return;
+        }
+
+        Runner::local()->run('composer require --dev laravel/sail');
     }
 
     private function displayCompletion(bool $useSail): void

@@ -29,22 +29,4 @@ test('user can update team name', function () { ... });
 
 ## Testing Strategy
 
-- Test functionality through Actions (unit tests), not through Controllers
-- Use `Action::fake()` in feature tests to verify Controllers delegate to Actions
 - Order tests: happy path first, edge cases, then error cases
-
-### Action Delegation
-
-```php
-test('it delegates to CreateTeam action', function () {
-    $user = User::factory()->create();
-
-    CreateTeam::fake()
-        ->shouldReceive('handle')
-        ->once()
-        ->with(
-            Mockery::on(fn ($arg) => $arg->id === $user->id),
-            Mockery::on(fn ($arg) => $arg['name'] === 'My Team')
-        );
-});
-```

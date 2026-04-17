@@ -102,9 +102,16 @@ class PublishFilesAction
         }
     }
 
-    public function publishAiGuidelines(): void
+    /**
+     * @param  string|array<int, string>  $guidelines
+     */
+    public function publishAiGuidelines(string|array $guidelines): void
     {
-        $this->files->copyDirectory(self::STUBS_PATH.'/.ai/guidelines', base_path('.ai/guidelines'));
+        $this->files->ensureDirectoryExists(base_path('.ai/guidelines'));
+
+        foreach ((array) $guidelines as $file) {
+            $this->files->copy(self::STUBS_PATH."/.ai/guidelines/{$file}", base_path(".ai/guidelines/{$file}"));
+        }
     }
 
     /**

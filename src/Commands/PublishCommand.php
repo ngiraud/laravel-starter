@@ -38,15 +38,17 @@ class PublishCommand extends Command
         $updatePackageJson->handle();
 
         if (confirm('Publish AI guidelines? (.ai/guidelines)', default: true)) {
-            $publishFiles->publishAiGuidelines();
+            $publishFiles->publishAiGuidelines(['conventions.md', 'testing.md']);
         }
 
         if (confirm('Publish Action design pattern? (Action, Fakeable + make:action command)', default: true)) {
             $publishFiles->publishActionPattern();
+            $publishFiles->publishAiGuidelines('actions.md');
         }
 
         if (confirm('Publish EnhanceEnum trait? (app/Enums/Concerns/EnhanceEnum.php)', default: true)) {
             $publishFiles->publishEnhanceEnum();
+            $publishFiles->publishAiGuidelines('enums.md');
         }
 
         $git->commit('Publish stub files and update composer.json scripts');

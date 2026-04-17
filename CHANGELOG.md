@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
+## v1.1.4 - 2026-04-17
+
+### What's new
+
+- **Sail `require-dev` in project** — when Sail is selected during `starter:install`, `laravel/sail` is now added as a `require-dev` in the project's own `composer.json` if not already present, so the project retains the dependency after the starter package is removed
+- **Split AI guidelines** — `.ai/guidelines/` stubs are now split into topic files (`conventions.md`, `testing.md`, `actions.md`, `enums.md`); `actions.md` is only published when the Action design pattern is confirmed, `enums.md` only when the EnhanceEnum trait is confirmed
+
+**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.3...v1.1.4
+
 ## v1.1.3 - 2026-04-17
 
 Fix PHPStan errors on `array_merge` calls with mixed-typed values in `UpdateComposerScriptsAction` and `UpdatePackageJsonAction`.

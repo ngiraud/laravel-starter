@@ -26,17 +26,6 @@
 
 - Define authorization in route definitions using `->can()`, not in controllers or Form Requests
 
-## Actions Pattern
-
-- Controllers MUST delegate all business logic to Action classes
-- Actions extend `App\Actions\Action` and implement a `handle()` method
-- Actions live in `app/Actions/{Domain}/` (e.g., `app/Actions/Teams/CreateTeamAction.php`)
-- Actions are singletons and use the `Fakeable` trait for testing
-- Always inject actions via dependency injection in controller methods, not `Action::make()`
-- Use **Verb + Noun** singular naming: `CreateTeamAction`, `SendMagicLinkAction`, `DeleteUserAction`
-- Create separate actions for distinct operations
-- Prefer DTOs over arrays for action input (e.g., `CreateTeamData`)
-
 ## Controllers
 
 - Never use try/catch in controllers - let Laravel's exception handler deal with exceptions
@@ -56,13 +45,6 @@
 - DTOs live in `app/Data/` (e.g., `app/Data/ProjectData.php`)
 - Use readonly constructor property promotion: `public readonly string $name`
 - DTOs are plain PHP objects — no Spatie Data dependency
-
-## Enums
-
-- Enums that need frontend serialization use the `EnhanceEnum` trait (`app/Enums/Concerns/EnhanceEnum.php`)
-- Enums using `EnhanceEnum` MUST implement a `label(): string` method — the trait requires it
-- The trait provides `toArray()`, `collect()`, `options()` for free
-- Use `options()` to pass enum choices to Vue/Inertia
 
 ## Finalization
 
