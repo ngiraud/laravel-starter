@@ -6,11 +6,6 @@ namespace BerryValley\LaravelStarter\Actions;
 
 class UpdatePackageJsonAction
 {
-    private const array SCRIPTS = [
-        'lint' => 'eslint . --fix && prettier --write resources/',
-        'test:lint' => 'eslint . && prettier --check resources/',
-    ];
-
     private const array LEGACY_SCRIPTS = ['format', 'format:check', 'lint:check'];
 
     public function handle(): void
@@ -21,8 +16,14 @@ class UpdatePackageJsonAction
 
         /** @var array<string, string> $scripts */
         $scripts = $packageJson['scripts'] ?? [];
+        $toAdd = $this->buildScripts($packageJson);
 
-        if ($this->isAlreadyApplied($scripts)) {
+        $legacyToRemove = array_filter(
+            self::LEGACY_SCRIPTS,
+            fn (string $k): bool => array_key_exists($k, $scripts),
+        );
+
+        if (empty($legacyToRemove) && $this->isAlreadyApplied($scripts, $toAdd)) {
             return;
         }
 
@@ -30,7 +31,7 @@ class UpdatePackageJsonAction
             unset($scripts[$legacy]);
         }
 
-        foreach (self::SCRIPTS as $name => $command) {
+        foreach ($toAdd as $name => $command) {
             $scripts[$name] = $command;
         }
 
@@ -40,10 +41,51 @@ class UpdatePackageJsonAction
     }
 
     /**
-     * @param  array<string, string>  $scripts
+     * @param  array<string, mixed>  $packageJson
+     * @return array<string, string>
      */
-    private function isAlreadyApplied(array $scripts): bool
+    private function buildScripts(array $packageJson): array
     {
-        return array_all(self::SCRIPTS, fn ($command, $name): bool => ! (($scripts[$name] ?? null) !== $command));
+        /** @var array<string, string> $allDeps */
+        $allDeps = array_merge(
+            $packageJson['devDependencies'] ?? [],
+            $packageJson['dependencies'] ?? [],
+        );
+
+        $hasEslint = array_key_exists('eslint', $allDeps);
+        $hasPrettier = array_key_exists('prettier', $allDeps);
+
+        /** @var array<int, string> $lintParts */
+        $lintParts = array_values(array_filter([
+            $hasEslint ? 'eslint . --fix' : null,
+            $hasPrettier ? 'prettier --write resources/' : null,
+        ]));
+
+        /** @var array<int, string> $testLintParts */
+        $testLintParts = array_values(array_filter([
+            $hasEslint ? 'eslint .' : null,
+            $hasPrettier ? 'prettier --check resources/' : null,
+        ]));
+
+        $scripts = [];
+
+        if ($lintParts !== []) {
+            $scripts['lint'] = implode(' && ', $lintParts);
+        }
+
+        if ($testLintParts !== []) {
+            $scripts['test:lint'] = implode(' && ', $testLintParts);
+        }
+
+        return $scripts;
+    }
+
+    /**
+     * @param  array<string, string>  $scripts
+     * @param  array<string, string>  $toAdd
+     */
+    private function isAlreadyApplied(array $scripts, array $toAdd): bool
+    {
+        return array_all($toAdd, fn ($command, $name): bool => ($scripts[$name] ?? null) === $command);
     }
 }

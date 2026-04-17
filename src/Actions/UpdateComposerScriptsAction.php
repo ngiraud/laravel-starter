@@ -58,6 +58,7 @@ readonly class UpdateComposerScriptsAction
         $hasRector = $this->composer->hasPackage('driftingly/rector-laravel');
         $hasLarastan = $this->composer->hasPackage('larastan/larastan');
         $hasParatest = $this->composer->hasPackage('brianium/paratest');
+        $hasNpmLint = $this->hasNpmPackage('eslint') || $this->hasNpmPackage('prettier');
 
         /** @var array<int, string> $lint */
         $lint = [];
@@ -65,20 +66,26 @@ readonly class UpdateComposerScriptsAction
             $lint[] = 'rector';
         }
         $lint[] = 'pint --parallel';
-        $lint[] = 'npm run lint';
+        if ($hasNpmLint) {
+            $lint[] = 'npm run lint';
+        }
 
         /** @var array<int, string> $testLint */
         $testLint = ['pint --parallel --test'];
         if ($hasRector) {
             $testLint[] = 'rector --dry-run';
         }
-        $testLint[] = 'npm run test:lint';
+
+        if ($hasNpmLint) {
+            $testLint[] = 'npm run test:lint';
+        }
 
         /** @var array<int, string> $testAll */
         $testAll = ['@test:lint'];
         if ($hasLarastan) {
             $testAll[] = '@test:types';
         }
+
         $testAll[] = '@test';
 
         $scripts = [
@@ -113,5 +120,23 @@ readonly class UpdateComposerScriptsAction
             $commands->map(fn (array $command): string => sprintf('"%s"', $command['command']))->implode(' '),
             $commands->pluck('name')->implode(','),
         );
+    }
+
+    private function hasNpmPackage(string $package): bool
+    {
+        $path = base_path('package.json');
+
+        if (! file_exists($path)) {
+            return false;
+        }
+
+        /** @var array<string, mixed> $packageJson */
+        $packageJson = json_decode((string) file_get_contents($path), true);
+        $allDeps = array_merge(
+            $packageJson['devDependencies'] ?? [],
+            $packageJson['dependencies'] ?? [],
+        );
+
+        return array_key_exists($package, $allDeps);
     }
 }

@@ -11,9 +11,10 @@ pest()->group('unit', 'actions');
  * Build and capture the generated scripts for a given set of installed packages.
  *
  * @param  array<int, string>  $installed
+ * @param  array<string, string>  $npmDeps
  * @return array<string, mixed>
  */
-function scriptsFor(array $installed = []): array
+function scriptsFor(array $installed = [], array $npmDeps = []): array
 {
     $captured = [];
 
@@ -28,7 +29,16 @@ function scriptsFor(array $installed = []): array
 
     app()->bind('composer', fn (): Composer => $mock);
 
+    $packageJsonPath = base_path('package.json');
+    if ($npmDeps !== []) {
+        file_put_contents($packageJsonPath, json_encode(['devDependencies' => $npmDeps], JSON_PRETTY_PRINT)."\n");
+    } else {
+        @unlink($packageJsonPath);
+    }
+
     app(UpdateComposerScriptsAction::class)->handle();
+
+    @unlink($packageJsonPath);
 
     return $captured;
 }
@@ -60,7 +70,28 @@ it('adds rector to lint and test:lint when rector is installed', function (): vo
 it('does not include rector in lint when rector is not installed', function (): void {
     $scripts = scriptsFor();
 
-    expect($scripts['lint'])->toBe(['pint --parallel', 'npm run lint']);
+    expect($scripts['lint'])->toBe(['pint --parallel']);
+});
+
+it('includes npm run lint when eslint is installed', function (): void {
+    $scripts = scriptsFor([], ['eslint' => '^9.0.0']);
+
+    expect($scripts['lint'])->toContain('npm run lint');
+    expect($scripts['test:lint'])->toContain('npm run test:lint');
+});
+
+it('includes npm run lint when prettier is installed', function (): void {
+    $scripts = scriptsFor([], ['prettier' => '^3.0.0']);
+
+    expect($scripts['lint'])->toContain('npm run lint');
+    expect($scripts['test:lint'])->toContain('npm run test:lint');
+});
+
+it('does not include npm run lint when neither eslint nor prettier is installed', function (): void {
+    $scripts = scriptsFor();
+
+    expect($scripts['lint'])->not->toContain('npm run lint');
+    expect($scripts['test:lint'])->not->toContain('npm run test:lint');
 });
 
 it('adds test:types script and includes it in test:all when larastan is installed', function (): void {
