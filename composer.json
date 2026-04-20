@@ -29,7 +29,7 @@
     "laravel/pint": "^1.14",
     "nunomaduro/collision": "^8.1.1||^7.10.0",
     "nunomaduro/pao": "^1.0",
-    "orchestra/testbench": "^10.0.0||^9.0.0||^8.22.0",
+    "orchestra/testbench": "^11.1.0",
     "pestphp/pest": "^4.0",
     "phpstan/extension-installer": "^1.3",
     "phpstan/phpstan-deprecation-rules": "^1.1||^2.0",
