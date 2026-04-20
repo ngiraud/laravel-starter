@@ -2,24 +2,14 @@
 
 All notable changes to `laravel-starter` will be documented in this file.
 
-## v1.1.6 - 2026-04-20
-
-### What's changed
-
-- **Unified CLI output pattern** — all commands now use `task()` from Laravel Prompts (with `Logger` for streaming process output inside the spinner) followed by `info('✓ ...')` to guarantee a visible validation tick after each step, regardless of terminal capabilities
-- **`Runner::run(?Logger $logger)`** — when a logger is provided, output is streamed line-by-line through the Prompts IPC socket; otherwise `tty()` is used for direct terminal output
-- **`starter:finalize`** — fixed missing commit after `php artisan boost:install`; Boost reconfiguration is now always committed
-- **Dev scripts** — `scripts/setup-local.sh <project>` adds the path repository and `minimum-stability: dev` to a target project's `composer.json`; `scripts/setup-sail.sh <project>` mounts the package into the project's Sail compose file
-
-**Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.5...v1.1.6
-
-## v1.1.5 - 2026-04-17
+## v1.1.5 - 2026-04-20
 
 ### What's new
 
-- **Boost + Sail detection** — `starter:finalize` now re-runs `php artisan boost:install` when `boost.json` is present, so Boost picks up Sail after installation
-- **AI agent directories excluded from git** — `updateGitignore()` now appends `/.claude`, `/.agents`, `/.amp`, `/.codex`, `/.gemini`, `/.junie`, `/.kiro` and `/.github/skills` so all Boost/`boost:update`-generated content (including machine-specific config like `.codex/config.toml`) is never committed
-- **Installation progress with Laravel Prompts** — `starter:install` now uses `intro`/`outro` for framing and a `task()` helper that shows `⠿ label` → live command output (up to 20 lines) → `✓ label`; `Runner::run()` accepts an optional `$onOutput` closure to route output to the task display instead of the raw TTY
+- **Boost + Sail detection** — `starter:finalize` now re-runs `php artisan boost:install` when `boost.json` is present, and commits the result
+- **AI agent directories excluded from git** — `updateGitignore()` now appends `/.claude`, `/.agents`, `/.amp`, `/.codex`, `/.gemini`, `/.junie`, `/.kiro` and `/.github/skills`
+- **CLI output with Laravel Prompts** — all commands use `task()` from Laravel Prompts (with `Logger` for streaming process output) followed by `info('✓ ...')` for a guaranteed validation tick after each step; `Runner::run()` accepts `?Logger` and falls back to `tty()` when none is provided
+- **Dev scripts** — `scripts/setup-local.sh <project>` adds the path repository and `minimum-stability: dev` to a target project's `composer.json`; `scripts/setup-sail.sh <project>` mounts the package into the project's Sail compose file
 
 **Full Changelog**: https://github.com/ngiraud/laravel-starter/compare/v1.1.4...v1.1.5
 
