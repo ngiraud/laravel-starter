@@ -31,21 +31,21 @@ jobs:
           coverage: xdebug
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
       - name: Cache Rector
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /tmp/rector
           key: rector-${{ github.run_id }}
           restore-keys: rector-
 
       - name: Cache PHPStan
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /tmp/phpstan
           key: phpstan-${{ github.run_id }}
