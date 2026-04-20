@@ -9,9 +9,13 @@ use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Composer;
+use Laravel\Prompts\Support\Logger;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
+use function Laravel\Prompts\task;
+use function Laravel\Prompts\warning;
 
 #[AsCommand(name: 'starter:add')]
 class AddPackageCommand extends Command
@@ -38,24 +42,29 @@ class AddPackageCommand extends Command
         $package = $packages[$key];
 
         if ($composer->hasPackage($package['require'])) {
-            $this->components->warn("{$package['label']} is already installed.");
+            warning("{$package['label']} is already installed.");
 
             return self::SUCCESS;
         }
 
         $runner = Runner::detect();
 
-        $this->components->info("Installing {$package['label']}");
-        $this->requirePackage($package, $runner);
+        task("Installing {$package['label']}", function (Logger $logger) use ($package, $runner, $git): bool {
+            $dev = $package['dev'] ? ' --dev' : '';
+            $version = isset($package['version']) ? " \"{$package['version']}\"" : '';
+            $runner->run("composer require {$package['require']}{$version}{$dev}", $logger);
 
-        if (isset($package['installer'])) {
-            /** @var Installer $installer */
-            $installer = app($package['installer']);
-            $installer->install($runner);
-        }
+            if (isset($package['installer'])) {
+                /** @var Installer $installer */
+                $installer = app($package['installer']);
+                $installer->install($runner);
+            }
 
-        $git->commit("Install {$package['label']}");
-        $this->components->success("{$package['label']} installed.");
+            $git->commit("Install {$package['label']}");
+
+            return true;
+        });
+        info("✓ {$package['label']} installed");
 
         return self::SUCCESS;
     }
@@ -75,16 +84,5 @@ class AddPackageCommand extends Command
             label: 'Which package would you like to install?',
             options: collect($packages)->mapWithKeys(fn (array $p, string $k): array => [$k => $p['label']])->all(),
         );
-    }
-
-    /**
-     * @param  array{label: string, require: string, dev: bool, default: bool, version?: string, installer?: class-string<Installer>}  $package
-     */
-    private function requirePackage(array $package, Runner $runner): void
-    {
-        $dev = $package['dev'] ? ' --dev' : '';
-        $version = isset($package['version']) ? " \"{$package['version']}\"" : '';
-
-        $runner->run("composer require {$package['require']}{$version}{$dev}");
     }
 }

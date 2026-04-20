@@ -9,9 +9,12 @@ use BerryValley\LaravelStarter\Actions\UpdateComposerScriptsAction;
 use BerryValley\LaravelStarter\Actions\UpdatePackageJsonAction;
 use BerryValley\LaravelStarter\Support\Git;
 use Illuminate\Console\Command;
+use Laravel\Prompts\Support\Logger;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\task;
 
 #[AsCommand(name: 'starter:publish')]
 class PublishCommand extends Command
@@ -25,35 +28,61 @@ class PublishCommand extends Command
         $locale = config()->string('app.locale', 'en');
         $dockerServices = $this->resolveDockerServices();
 
-        $this->components->info('Publishing stub files');
-        $publishFiles->publishConfigFiles();
-        $publishFiles->publishWebLocalFile();
-        $publishFiles->publishGithubActions($dockerServices);
-        $publishFiles->publishLanguageFiles($locale);
-        $publishFiles->updateConsoleFile();
-        $publishFiles->updateGitignore();
+        task('Publishing stub files', function (Logger $logger) use ($publishFiles, $dockerServices, $locale): bool {
+            $publishFiles->publishConfigFiles();
+            $publishFiles->publishWebLocalFile();
+            $publishFiles->publishGithubActions($dockerServices);
+            $publishFiles->publishLanguageFiles($locale);
+            $publishFiles->updateConsoleFile();
+            $publishFiles->updateGitignore();
 
-        $this->components->info('Updating composer.json scripts');
-        $updateScripts->handle();
-        $updatePackageJson->handle();
+            return true;
+        });
+        info('✓ Stub files published');
+
+        task('Updating composer.json scripts', function (Logger $logger) use ($updateScripts, $updatePackageJson): bool {
+            $updateScripts->handle();
+            $updatePackageJson->handle();
+
+            return true;
+        });
+        info('✓ composer.json scripts updated');
 
         if (confirm('Publish AI guidelines? (.ai/guidelines)', default: true)) {
-            $publishFiles->publishAiGuidelines(['conventions.md', 'testing.md']);
+            task('Publishing AI guidelines', function (Logger $logger) use ($publishFiles): bool {
+                $publishFiles->publishAiGuidelines(['conventions.md', 'testing.md']);
+
+                return true;
+            });
+            info('✓ AI guidelines published');
         }
 
         if (confirm('Publish Action design pattern? (Action, Fakeable + make:action command)', default: true)) {
-            $publishFiles->publishActionPattern();
-            $publishFiles->publishAiGuidelines('actions.md');
+            task('Publishing Action pattern', function (Logger $logger) use ($publishFiles): bool {
+                $publishFiles->publishActionPattern();
+                $publishFiles->publishAiGuidelines('actions.md');
+
+                return true;
+            });
+            info('✓ Action pattern published');
         }
 
         if (confirm('Publish EnhanceEnum trait? (app/Enums/Concerns/EnhanceEnum.php)', default: true)) {
-            $publishFiles->publishEnhanceEnum();
-            $publishFiles->publishAiGuidelines('enums.md');
+            task('Publishing EnhanceEnum trait', function (Logger $logger) use ($publishFiles): bool {
+                $publishFiles->publishEnhanceEnum();
+                $publishFiles->publishAiGuidelines('enums.md');
+
+                return true;
+            });
+            info('✓ EnhanceEnum trait published');
         }
 
-        $git->commit('Publish stub files and update composer.json scripts');
+        task('Committing changes', function (Logger $logger) use ($git): bool {
+            $git->commit('Publish stub files and update composer.json scripts');
 
-        $this->components->success('Files published.');
+            return true;
+        });
+        info('✓ Changes committed');
 
         return self::SUCCESS;
     }

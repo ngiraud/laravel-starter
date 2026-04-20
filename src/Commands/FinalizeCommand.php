@@ -8,7 +8,12 @@ use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Composer;
+use Laravel\Prompts\Support\Logger;
 use Symfony\Component\Console\Attribute\AsCommand;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\task;
+use function Laravel\Prompts\warning;
 
 #[AsCommand(name: 'starter:finalize')]
 class FinalizeCommand extends Command
@@ -27,16 +32,28 @@ class FinalizeCommand extends Command
         $hasPint = $composer->hasPackage('laravel/pint');
 
         if (! $hasRector && ! $hasPint) {
-            $this->components->warn('No code quality tools installed (Rector, Pint).');
+            warning('No code quality tools installed (Rector, Pint).');
 
             return self::SUCCESS;
         }
 
-        $this->components->info('Applying code quality tools');
-        $runner->run('composer lint');
+        task('Applying code quality tools', function (Logger $logger) use ($runner, $git): bool {
+            $runner->run('composer lint', $logger);
+            $git->commit('Apply code quality rules', 'chore');
 
-        $git->commit('Apply code quality rules', 'chore');
-        $this->components->success('Done.');
+            return true;
+        });
+        info('✓ Code quality tools applied');
+
+        if (file_exists(base_path('boost.json'))) {
+            task('Reconfiguring Boost', function (Logger $logger) use ($runner, $git): bool {
+                $runner->run('php artisan boost:install', $logger);
+                $git->commit('Reconfigure Boost', 'chore');
+
+                return true;
+            });
+            info('✓ Boost reconfigured');
+        }
 
         return self::SUCCESS;
     }

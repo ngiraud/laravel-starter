@@ -10,7 +10,12 @@ use BerryValley\LaravelStarter\Support\Git;
 use BerryValley\LaravelStarter\Support\Runner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Composer;
+use Laravel\Prompts\Support\Logger;
 use Symfony\Component\Console\Attribute\AsCommand;
+
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\task;
+use function Laravel\Prompts\warning;
 
 #[AsCommand(name: 'starter:remove')]
 class RemovePackageCommand extends Command
@@ -38,33 +43,35 @@ class RemovePackageCommand extends Command
         $package = $packages[$key];
 
         if (! $composer->hasPackage($package['require'])) {
-            $this->components->warn("{$package['label']} is not installed.");
+            warning("{$package['label']} is not installed.");
 
             return self::SUCCESS;
         }
 
         $runner = Runner::detect();
 
-        $this->components->info("Removing {$package['label']}");
+        task("Removing {$package['label']}", function (Logger $logger) use ($package, $runner, $git): bool {
+            if (isset($package['installer'])) {
+                /** @var Installer $installer */
+                $installer = app($package['installer']);
 
-        if (isset($package['installer'])) {
-            /** @var Installer $installer */
-            $installer = app($package['installer']);
-
-            if ($installer instanceof Uninstallable) {
-                $installer->uninstall($runner);
+                if ($installer instanceof Uninstallable) {
+                    $installer->uninstall($runner);
+                } elseif ($package['modifies_console'] ?? false) {
+                    warning('This package added scheduled tasks to routes/console.php. Please remove them manually.');
+                }
             } elseif ($package['modifies_console'] ?? false) {
-                $this->components->warn('This package added scheduled tasks to routes/console.php. Please remove them manually.');
+                warning('This package added scheduled tasks to routes/console.php. Please remove them manually.');
             }
-        } elseif ($package['modifies_console'] ?? false) {
-            $this->components->warn('This package added scheduled tasks to routes/console.php. Please remove them manually.');
-        }
 
-        $dev = $package['dev'] ? ' --dev' : '';
-        $runner->run("composer remove {$package['require']}{$dev}");
+            $dev = $package['dev'] ? ' --dev' : '';
+            $runner->run("composer remove {$package['require']}{$dev}", $logger);
 
-        $git->commit("Remove {$package['label']}");
-        $this->components->success("{$package['label']} removed.");
+            $git->commit("Remove {$package['label']}");
+
+            return true;
+        });
+        info("✓ {$package['label']} removed");
 
         return self::SUCCESS;
     }

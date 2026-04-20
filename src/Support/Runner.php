@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BerryValley\LaravelStarter\Support;
 
 use Illuminate\Support\Facades\Process;
+use Laravel\Prompts\Support\Logger;
 
 class Runner
 {
@@ -32,12 +33,18 @@ class Runner
         return new self(false);
     }
 
-    public function run(string $command): void
+    public function run(string $command, ?Logger $logger = null): void
     {
         $full = $this->useSail ? "./vendor/bin/sail {$command}" : $command;
 
-        Process::tty(! app()->environment('testing'))
-            ->run($full, fn (string $type, string $output): int => print ($output))
+        Process::tty(! $logger instanceof Logger && ! app()->environment('testing'))
+            ->run($full, function (string $type, string $output) use ($logger): void {
+                foreach (explode("\n", mb_rtrim($output, "\n")) as $line) {
+                    if (mb_trim($line) !== '') {
+                        $logger?->line($line);
+                    }
+                }
+            })
             ->throw();
     }
 

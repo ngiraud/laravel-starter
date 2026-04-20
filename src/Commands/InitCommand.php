@@ -9,9 +9,13 @@ use BerryValley\LaravelStarter\Actions\UpdateEnvironmentAction;
 use BerryValley\LaravelStarter\Support\Git;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use Laravel\Prompts\Support\Logger;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\outro;
 use function Laravel\Prompts\select;
+use function Laravel\Prompts\task;
 use function Laravel\Prompts\text;
 
 #[AsCommand(name: 'starter:init')]
@@ -37,16 +41,25 @@ class InitCommand extends Command
 
         $database = Str::of(base_path())->basename()->snake()->toString();
 
-        $git->init();
-        $publishFiles->updateGitignore();
-        $git->commit('Initial commit');
+        task('Initializing git', function (Logger $logger) use ($git, $publishFiles): bool {
+            $git->init();
+            $publishFiles->updateGitignore();
+            $git->commit('Initial commit');
 
-        $this->components->info('Updating environment files');
-        $updateEnv->handle(base_path('.env'), $appName, $locale, $database);
-        $updateEnv->handle(base_path('.env.example'), $appName, $locale, $database);
-        $git->commit('Update environment files');
+            return true;
+        });
+        info('✓ Git initialized');
 
-        $this->components->success('Done. Run starter:sail or starter:add to continue.');
+        task('Updating environment files', function (Logger $logger) use ($updateEnv, $git, $appName, $locale, $database): bool {
+            $updateEnv->handle(base_path('.env'), $appName, $locale, $database);
+            $updateEnv->handle(base_path('.env.example'), $appName, $locale, $database);
+            $git->commit('Update environment files');
+
+            return true;
+        });
+        info('✓ Environment files updated');
+
+        outro('Done. Run starter:sail or starter:add to continue.');
 
         return self::SUCCESS;
     }

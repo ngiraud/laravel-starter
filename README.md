@@ -86,6 +86,20 @@ composer test:all   # Full CI suite
 composer test
 ```
 
+## Local development
+
+Two helper scripts are provided to wire up the package as a local path repository in a target project:
+
+```bash
+# Add path repo + minimum-stability: dev to the project's composer.json
+./scripts/setup-local.sh my-laravel-project
+
+# Mount the package into the project's Sail compose file
+./scripts/setup-sail.sh my-laravel-project
+```
+
+Both scripts resolve paths automatically relative to their own location (assumes projects live alongside `laravel-packages/` in the same parent directory).
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

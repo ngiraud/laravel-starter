@@ -115,14 +115,15 @@ class PublishFilesAction
     }
 
     /**
-     * Append .claude/ to .gitignore so Boost-generated AI workspace files are not committed.
+     * Append Boost/AI agent directories to .gitignore so generated files are not committed.
+     * These directories contain machine-specific paths (cwd, config) that differ between users.
      */
     public function updateGitignore(): void
     {
         $path = base_path('.gitignore');
         $content = (string) file_get_contents($path);
 
-        foreach (['/.claude'] as $entry) {
+        foreach (['/.claude', '/.agents', '/.amp', '/.codex', '/.gemini', '/.junie', '/.kiro', '/.github/skills'] as $entry) {
             if (! str_contains($content, $entry)) {
                 $content .= "\n{$entry}";
             }

@@ -12,13 +12,18 @@ use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Str;
+use Laravel\Prompts\Support\Logger;
 use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\intro;
 use function Laravel\Prompts\multiselect;
+use function Laravel\Prompts\outro;
 use function Laravel\Prompts\pause;
 use function Laravel\Prompts\select;
+use function Laravel\Prompts\task;
 use function Laravel\Prompts\text;
 
 #[AsCommand(name: 'starter:install')]
@@ -37,6 +42,8 @@ class InstallCommand extends Command
 
     public function handle(Git $git, Filesystem $files, UpdateEnvironmentAction $updateEnv, PublishFilesAction $publishFiles): int
     {
+        intro('Laravel Starter — Installation');
+
         // ─── Collect preferences ──────────────────────────────────────────
 
         $appName = text(
@@ -88,16 +95,25 @@ class InstallCommand extends Command
 
         // ─── Git init + initial commit ────────────────────────────────────
 
-        $git->init();
-        $publishFiles->updateGitignore();
-        $git->commit('Initial commit');
+        task('Initializing git', function (Logger $logger) use ($git, $publishFiles): bool {
+            $git->init();
+            $publishFiles->updateGitignore();
+            $git->commit('Initial commit');
+
+            return true;
+        });
+        info('✓ Git initialized');
 
         // ─── Environment files ────────────────────────────────────────────
 
-        $this->components->info('Updating environment files');
-        $updateEnv->handle(base_path('.env'), $appName, $locale, $database, $dockerServices);
-        $updateEnv->handle(base_path('.env.example'), $appName, $locale, $database, $dockerServices);
-        $git->commit('Update environment files');
+        task('Updating environment files', function (Logger $logger) use ($updateEnv, $git, $appName, $locale, $database, $dockerServices): bool {
+            $updateEnv->handle(base_path('.env'), $appName, $locale, $database, $dockerServices);
+            $updateEnv->handle(base_path('.env.example'), $appName, $locale, $database, $dockerServices);
+            $git->commit('Update environment files');
+
+            return true;
+        });
+        info('✓ Environment files updated');
 
         // ─── Sail (optional) ──────────────────────────────────────────────
 
@@ -110,7 +126,6 @@ class InstallCommand extends Command
         // ─── Packages ─────────────────────────────────────────────────────
 
         foreach ($selectedKeys as $key) {
-            $this->newLine();
             $this->call('starter:add', ['package' => $key]);
         }
 
@@ -120,15 +135,17 @@ class InstallCommand extends Command
         $composer = app('composer');
 
         if (array_intersect(['minio', 'rustfs'], $dockerServices) !== [] && ! $composer->hasPackage('league/flysystem-aws-s3-v3')) {
-            $this->newLine();
-            $this->components->info('Installing Flysystem S3 adapter (required for Minio/RustFS)');
-            $runner->run('composer require league/flysystem-aws-s3-v3');
-            $git->commit('Install Flysystem S3 adapter');
+            task('Installing Flysystem S3 adapter', function (Logger $logger) use ($runner, $git): bool {
+                $runner->run('composer require league/flysystem-aws-s3-v3', $logger);
+                $git->commit('Install Flysystem S3 adapter');
+
+                return true;
+            });
+            info('✓ Flysystem S3 adapter installed');
         }
 
         // ─── Publish files ────────────────────────────────────────────────
 
-        $this->newLine();
         $this->call('starter:publish', [
             '--docker-services' => implode(',', $dockerServices),
         ]);
@@ -136,27 +153,37 @@ class InstallCommand extends Command
         // ─── Frontend dependencies ────────────────────────────────────────
 
         if (! $files->exists(base_path('node_modules'))) {
-            $this->newLine();
-            $this->components->info('Installing npm dependencies');
-            $runner->run('npm install');
+            task('Installing npm dependencies', function (Logger $logger) use ($runner): bool {
+                $runner->run('npm install', $logger);
+
+                return true;
+            });
+            info('✓ npm dependencies installed');
         }
 
         // ─── Migrations ───────────────────────────────────────────────────
 
-        $this->newLine();
-        $this->components->info('Running migrations');
-        $runner->run('php artisan migrate:fresh');
+        task('Running migrations', function (Logger $logger) use ($runner): bool {
+            $runner->run('php artisan migrate:fresh', $logger);
+
+            return true;
+        });
+        info('✓ Migrations ran');
 
         // ─── Rector + Pint ────────────────────────────────────────────────
 
-        $this->newLine();
         $this->call('starter:finalize');
 
         // ─── Self-remove ──────────────────────────────────────────────────
 
         if (confirm('Remove this starter package?', default: true)) {
-            $runner->run('composer remove ngiraud/laravel-starter --dev');
-            $git->commit('Remove laravel-starter package', 'chore');
+            task('Removing starter package', function (Logger $logger) use ($runner, $git): bool {
+                $runner->run('composer remove ngiraud/laravel-starter --dev', $logger);
+                $git->commit('Remove laravel-starter package', 'chore');
+
+                return true;
+            });
+            info('✓ Starter package removed');
         }
 
         // ─── Done ─────────────────────────────────────────────────────────
@@ -171,13 +198,12 @@ class InstallCommand extends Command
      */
     private function installSail(Git $git, array $dockerServices): void
     {
-        $this->components->info('Installing Sail');
-
         $this->requireSailInProject();
 
         if (! file_exists($this->composePath())) {
             $this->call('sail:install', ['--with' => implode(',', $dockerServices)]);
             $git->commit('Install Sail');
+            info('✓ Sail installed');
         }
 
         $this->newLine();
@@ -196,15 +222,20 @@ class InstallCommand extends Command
             return;
         }
 
-        Runner::local()->run('composer require --dev laravel/sail');
+        task('Adding laravel/sail as a dev dependency', function (Logger $logger): bool {
+            Runner::local()->run('composer require --dev laravel/sail', $logger);
+
+            return true;
+        });
+        info('✓ laravel/sail added');
     }
 
     private function displayCompletion(bool $useSail): void
     {
         $binary = $useSail ? './vendor/bin/sail ' : '';
 
-        $this->newLine(2);
-        $this->components->success('Installation complete!');
+        $this->newLine();
+        outro('Installation complete!');
         $this->newLine();
         $this->line('  Start the development server:');
         $this->line("  <fg=gray>➜</> <options=bold>{$binary}composer dev</>");
